@@ -1,0 +1,59 @@
+Option 1 (copy/paste)
+
+1. Modify/create a text editor app to have copy-paste functionality within the app using onscreen buttons
+2. Implement cross app functionality with buttons + keyboard (Ctrl+C, Ctrl+V does work with bluetooth keyboard)
+3. Think of new gestures for copy-paste; or think of a combination of existing gestures
+4. Implement custom gestures
+
+Problems:
+- Implementing custom gestures for all apps is likely to be impossible
+- Having gestures that work on one app only breaks the uniformity of the Hololens experience (not recommended by Microsoft people)
+
+Advantages:
+- Custom gesture implementation would be the most interesting (and challenging) part - involves machine learning
+
+
+Option 2 (copy/paste)
+
+1. Create custom keyboard with copy-paste buttons to work on test app
+2. Think of new gestures for copy-paste; or think of a combination of existing gestures
+3. Implement custom gestures to work with the custom keyboard
+4. Make the keyboard integrable with other Hololens apps
+
+Problems:
+- Not clear how custom keyboard would integrate with other Hololens apps (if it would at all)
+
+Advantages:
+- Has custom gestures
+- Wouldn't break the uniformity of the experience
+
+
+Option 3 (text placement anywhere in the world)
+
+1. Create/modify text editor app (one exists already)
+2. Implement 3D coexistence of text anywhere in the world
+
+Problems:
+- It seems that only one 3D app can run at a time
+(https://forums.hololens.com/discussion/1913/understanding-coexistence-of-apps-and-their-holograms-unity)
+- An app with text placement anywhere exists already, therefore, all progress would depend on coexistence
+
+Advantages:
+- Closer to project current project description
+
+
+Option 4 (gesture typing)
+
+1. Create custom keyboard
+2. Implement basic gesture typing on the keyboard
+3. Improve the typing with machine learning
+3. Integrate keyboard with other Hololens apps
+
+Problems:
+- Same as with Option 2: not sure if keyboard can be integrated
+- Might be too challenging
+- Might not be more comfortable than current typing
+
+Advantages:
+- A lot of information about gesture typing with Android
+- Involves machine learning, possibly some NLP
