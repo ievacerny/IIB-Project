@@ -1,0 +1,22 @@
+1. Build basic text interaction app in Unity (a test bed)
+
+  The app should support 'select', 'copy', 'paste', 'delete', 'cancel' actions. Use monospace font to make geometrical calculations easier. Make a plane that look like a text only webpage. Colliders on the words might help with selection.
+
+  Possibly add a control panel with buttons for different tools that can be brought up by "looking" down (bringing the cursor down).
+
+2. Write mock code or add keyboard controls to test the implemented actions separately from the gestures.
+
+3. Get Leap Motion working with unity
+
+4. Implement tracking on index finger
+
+5. Implement action gestures using one finger
+
+6. Implement full hand gesture based interactions
+
+7. Possibly add multiple planes and move text between them using full hand gestures
+
+
+All of this is parameter based interaction (e.g. text location, which plane).
+
+As the project continues, setup product requirements. Don't count on testing with multiple people (might not be time for that)
