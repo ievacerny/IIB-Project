@@ -7,10 +7,10 @@ GPU: NVIDIA GTX 860M (min GTX 965M)
 RAM: 8GB
 DirectX Version 12
 
-Unity; Version 2017.4.12f1 Personal
-Visual Studio Community 2017; Version 15.8.6
+Unity; Version 2018.2.12f1 Personal
+Visual Studio Community 2017; Version 15.8.7
     Visual Studio Tools for Unity - 3.8.0.7
-    Visual Studio Tools for Universal Windows Apps - 15.0.28010.2041
+    Visual Studio Tools for Universal Windows Apps - 15.0.28010.2046
 Hololens Emulator - 10.0.17134.80
 
 
@@ -23,5 +23,7 @@ GPU: Intel Iris 540
 RAM: 8GB
 DirectX Version 12
 
-Unity; Version 2018.2.11f1 Personal
+Unity; Version 2018.2.12f1 Personal
 Visual Studio Community 2017; Version 15.8.7
+    Visual Studio Tools for Unity - 3.8.0.7
+    Visual Studio Tools for Universal Windows Apps - 15.0.28010.2046
