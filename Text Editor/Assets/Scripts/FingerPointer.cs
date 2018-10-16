@@ -40,14 +40,12 @@ public class FingerPointer : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
             Debug.Log("Down");
-            Debug.Log(Camera.main.WorldToScreenPoint(transform.position));
-            //Vector2 position = Camera.main.WorldToScreenPoint(transform.position);
-            //MouseOperations.MouseEvent(MouseOperations.MouseEventFlags.LeftDown, position);
+            MouseOperations.MouseEvent(MouseOperations.MouseEventFlags.LeftDown);
         }
-        //if (Input.GetKeyUp(KeyCode.LeftControl))
-        //{
-        //    Debug.Log("Up");
-        //    MouseOperations.MouseEvent(MouseOperations.MouseEventFlags.LeftUp);
-        //}
+        if (Input.GetKeyUp(KeyCode.LeftControl))
+        {
+            Debug.Log("Up");
+            MouseOperations.MouseEvent(MouseOperations.MouseEventFlags.LeftUp);
+        }
     }
 }
