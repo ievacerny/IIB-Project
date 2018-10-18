@@ -1,0 +1,28 @@
+do every single letter as gameobject
+
+Given a coordinate in rectangle, find the letter.
+
+Make it first (research), optimise later.
+
+If the model changes, give me a new view.
+
+start from the basic simple functions. Build a framework
+
+Plan it out first - what is the model, what is the view.
+
+
+Model-View-Controller
+
+Model:
+Array of strings (array of arrays)
+Row index of primary array
+Character index relative to secondary array (a string is an array)
+
+View:
+1. Render the model
+2. Input support:
+2a. Given a point, give me the row and character index
+2b. Given a row and character index, give me the rendered coordinates
+
+Controller:
+Let's not worry about that
