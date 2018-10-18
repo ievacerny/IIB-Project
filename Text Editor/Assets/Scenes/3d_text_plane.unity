@@ -387,9 +387,9 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1137383244}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -19.75, y: 11.3, z: 30}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 30}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
@@ -536,14 +536,42 @@ TextMesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1926576252}
-  m_Text: Hello world!
+  m_Text: '12345678901234567890123456789012345678901234567890123
+
+    2----------------------------------------------------
+
+    3----------------------------------------------------
+
+    4----------------------------------------------------
+
+    5----------------------------------------------------
+
+    6----------------------------------------------------
+
+    7----------------------------------------------------
+
+    8----------------------------------------------------
+
+    9----------------------------------------------------
+
+    0----------------------------------------------------
+
+    1----------------------------------------------------
+
+    2----------------------------------------------------
+
+    3----------------------------------------------------
+
+    4----------------------------------------------------
+
+    5----------------------------------------------------'
   m_OffsetZ: 0
   m_CharacterSize: 1
   m_LineSpacing: 1
   m_Anchor: 0
   m_Alignment: 0
   m_TabSize: 4
-  m_FontSize: 30
+  m_FontSize: 16
   m_FontStyle: 0
   m_RichText: 1
   m_Font: {fileID: 12800000, guid: a444110c54cefd64ba0b3e3b0653bc4a, type: 3}
@@ -622,8 +650,8 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1928779728}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.1}
-  m_LocalScale: {x: 1.0333334, y: 1.0333334, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.10000038}
+  m_LocalScale: {x: 1.04, y: 1.0666667, z: 1}
   m_Children: []
   m_Father: {fileID: 405842287}
   m_RootOrder: 0
