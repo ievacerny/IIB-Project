@@ -17,6 +17,9 @@ public class ActivePage : MonoBehaviour {
     private float width = 0.0186f;
     private float height = 0.0643f;
 
+    private Indices start;
+
+    public Model model;
     ModelViewMapping modelview;
 
     // Use this for initialization
@@ -41,6 +44,33 @@ public class ActivePage : MonoBehaviour {
 	// Update is called once per frame
 	void Update ()
     {
+
+        if (cursor_transform != null && inEditMode && Input.GetMouseButtonDown(0))
+        {
+            Vector3 coords = transform.InverseTransformPoint(cursor_transform.position);
+            if (coords.x <= 0.5f && coords.x >= -0.5f && coords.y <= 0.5 && coords.y >= -0.5f)
+            {
+                var ind = modelview.CoordsToIndex(coords);
+                var coords2 = modelview.IndexToCoords(ind);
+                start = ind;
+                //Debug.Log(string.Format("Real {0}, new {1}; row {2}, col {3}", coords.ToString("F4"), coords2.ToString("F4"), ind.row, ind.col));
+            }
+        }
+
+        if (cursor_transform != null && inEditMode && Input.GetMouseButtonUp(0))
+        {
+            Vector3 coords = transform.InverseTransformPoint(cursor_transform.position);
+            if (coords.x <= 0.5f && coords.x >= -0.5f && coords.y <= 0.5 && coords.y >= -0.5f)
+            {
+                var ind = modelview.CoordsToIndex(coords);
+                var coords2 = modelview.IndexToCoords(ind);
+                Debug.Log(model.GetSelection(start, ind));
+                start = null;
+                //Debug.Log(string.Format("Real {0}, new {1}; row {2}, col {3}", coords.ToString("F4"), coords2.ToString("F4"), ind.row, ind.col));
+            }
+        }
+
+
         if (!inEditMode && cursor_on_page && Input.GetMouseButtonDown(0))
         {
             inEditMode = true;
@@ -63,16 +93,6 @@ public class ActivePage : MonoBehaviour {
             frame_quad_rend.material.color = new_color;
         }
 
-        if (cursor_transform != null)
-        {
-            Vector3 coords = transform.InverseTransformPoint(cursor_transform.position);
-            if (coords.x <= 0.5f && coords.x >= -0.5f && coords.y <= 0.5 && coords.y >= -0.5f)
-            {
-                var ind = modelview.CoordsToIndex(coords);
-                var coords2 = modelview.IndexToCoords(ind);
-                Debug.Log(string.Format("Real {0}, new {1}; row {2}, col {3}", coords.ToString("F4"), coords2.ToString("F4"), ind.row, ind.col));
-            }
-        }
         
 
     }

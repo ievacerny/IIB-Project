@@ -6,15 +6,22 @@ using UnityEngine;
 public class TextEditing : MonoBehaviour
 {
     // TODO: Do geometry calculations to calculate this automatically
-    public int chars_in_line = 22;
+    public int max_rows = 15;
+    public int max_columns = 53;
+
+    private int chars_in_line = 53;
 
     private TextMesh full_text;
     private ActivePage page;
+
+    Model model;
 
     void Start()
     {
         full_text = GetComponent<TextMesh>();
         page = transform.GetComponentInParent<ActivePage>();
+        model = new Model(full_text.text, max_rows, max_columns);
+        page.model = model;
     }
 
     void Update()

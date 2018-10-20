@@ -6,9 +6,6 @@ public class ModelViewMapping {
     private float width;
     private float height;
 
-    Vector3 end = new Vector3(0.4818f, -0.4326f, 0f);
-    Vector3 beg = new Vector3(-0.4874f, 0.4062f, 0f);
-
     public ModelViewMapping(float margin, float width, float height)
     {
         this.margin = margin;
@@ -16,9 +13,9 @@ public class ModelViewMapping {
         this.height = height;
     }
 
-    public Character CoordsToIndex(Vector3 coords)
+    public Indices CoordsToIndex(Vector3 coords)
     {
-        var indices = new Character();
+        var indices = new Indices();
 
         indices.row = (int) ((coords.y - 0.5f) / -height);
         indices.col = (int) ((coords.x + (0.5f - margin)) / width);
@@ -27,7 +24,7 @@ public class ModelViewMapping {
         return indices;
     }
 
-    public Vector3 IndexToCoords(Character indices)
+    public Vector3 IndexToCoords(Indices indices)
     {
         var coords = new Vector3();
 
@@ -41,25 +38,8 @@ public class ModelViewMapping {
 
 
 
-    // TODO: automatically detect model size based on canvas and font size
-    private char[,] model;
-    public int[] model_size = new int[] { 15, 53 };
-
-    void BuildModel(string text, int[] model_size)
-    {
-        model = new char[model_size[0], model_size[1]];
-
-        string[] lines = text.Split(new char[] { '\n' });
-
-        // TODO: Assume for now, that text will always be within model size. Fix later
-        for (int i = 0; i < lines.Length; i++)
-        {
-            for (int j = 0; j < lines[i].Length; j++)
-            {
-                model[i, j] = lines[i][j];
-            }
-        }
-    }
+    Vector3 end = new Vector3(0.4818f, -0.4326f, 0f);
+    Vector3 beg = new Vector3(-0.4874f, 0.4062f, 0f);
 
     // Function used to optimise the width and height of the characters, and the margin of the page
     void OptimiseParams()
@@ -97,7 +77,7 @@ public class ModelViewMapping {
 }
 
 
-public class Character
+public class Indices
 {
     public int row;
     public int col;
