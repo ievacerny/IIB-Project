@@ -58,6 +58,7 @@ public class TextEditing : MonoBehaviour
                 }
 
                 full_text.text = WrapLines(new_text);
+                model.BuildModel(full_text.text);
             }
         }
     }

@@ -24,12 +24,12 @@ public class ModelViewMapping {
         return indices;
     }
 
-    public Vector3 IndexToCoords(Indices indices)
+    public Vector3 IndexToCoords(float row, float col)
     {
         var coords = new Vector3();
 
-        coords.y = ((float)indices.row + 0.5f) * -height + 0.5f;
-        coords.x = ((float)indices.col + 0.5f) * width - (0.5f - margin);
+        coords.y = (row + 0.5f) * -height + 0.5f;
+        coords.x = (col + 0.5f) * width - (0.5f - margin);
         coords.z = 0f;
 
         return coords;
@@ -52,10 +52,10 @@ public class ModelViewMapping {
             for (width = 0.01f; width <= 0.06f; width += 0.0001f)
             {
                 var end_i = CoordsToIndex(end);
-                var end_c = IndexToCoords(end_i);
+                var end_c = IndexToCoords(end_i.row, end_i.col);
 
                 var beg_i = CoordsToIndex(beg);
-                var beg_c = IndexToCoords(beg_i);
+                var beg_c = IndexToCoords(beg_i.row, beg_i.col);
 
                 if ((Mathf.Abs(end_c.x - end.x) + Mathf.Abs(beg_c.x - beg.x) < min_distance) &&
                     end_i.col == 52 && beg_i.col == 0)
@@ -81,4 +81,21 @@ public class Indices
 {
     public int row;
     public int col;
+
+    /// <summary>
+    /// Checks if the current index is before the other one.
+    /// 
+    /// Returns false if both are the same.
+    /// </summary>
+    /// <param name="other">The other index</param>
+    /// <returns>True if current is before the other one</returns>
+    public bool IsBefore(Indices other)
+    {
+        if (row < other.row)
+            return true;
+        else if (row == other.row && col < other.col)
+            return true;
+        else
+            return false;
+    }
 }

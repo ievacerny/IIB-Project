@@ -253,6 +253,30 @@ Prefab:
 
         interpretive trail. '
       objectReference: {fileID: 0}
+    - target: {fileID: 4926276591565492, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
+      propertyPath: m_RootOrder
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114777487051207596, guid: c35a800e256dec64c86a3b599cfadb28,
+        type: 2}
+      propertyPath: selection_prefab
+      value: 
+      objectReference: {fileID: 1843603625102300, guid: 6179576734aea364cb4c31177def56cc,
+        type: 2}
+    - target: {fileID: 114777487051207596, guid: c35a800e256dec64c86a3b599cfadb28,
+        type: 2}
+      propertyPath: selection_time_delay
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 114777487051207596, guid: c35a800e256dec64c86a3b599cfadb28,
+        type: 2}
+      propertyPath: frame_quad
+      value: 
+      objectReference: {fileID: 1367006506}
+    - target: {fileID: 1117236307209690, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
   m_IsPrefabAsset: 0
@@ -435,6 +459,11 @@ Light:
   m_UseColorTemperature: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!1 &1367006506 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1791408932966958, guid: c35a800e256dec64c86a3b599cfadb28,
+    type: 2}
+  m_PrefabInternal: {fileID: 486233919}
 --- !u!1001 &1743408157
 Prefab:
   m_ObjectHideFlags: 0
@@ -477,10 +506,6 @@ Prefab:
     - target: {fileID: 1117236307209690, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
       propertyPath: m_Name
       value: Coordinate Test Page
-      objectReference: {fileID: 0}
-    - target: {fileID: 1117236307209690, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}

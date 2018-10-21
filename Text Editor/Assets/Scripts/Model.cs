@@ -5,18 +5,19 @@ public class Model {
 
     // TODO: automatically detect model size based on canvas and font size
     private char[,] model;
-
-    private string text;
+    public int max_rows;
+    public int max_columns;
 
     public Model(string text, int max_rows, int max_columns)
     {
-        this.text = text;
-        model = new char[max_rows, max_columns];
+        this.max_rows = max_rows;
+        this.max_columns = max_columns;
         BuildModel(text);
     }
 
-    void BuildModel(string text)
+    public void BuildModel(string text)
     {
+        model = new char[max_rows, max_columns];
         string[] lines = text.Split(new char[] { '\n' });
 
         // TODO: Assume for now, that text will always initially be within model size. Fix later
@@ -75,6 +76,13 @@ public class Model {
     {
         if (start.row >= model.GetLength(0) && start.col >= model.GetLength(1))
             return "";
+
+        if (end.IsBefore(start))
+        {
+            Indices temp = start;
+            start = end;
+            end = temp;
+        }
         
         string selection = "";
         int line_start_col = start.col;
