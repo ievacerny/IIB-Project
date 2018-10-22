@@ -8,9 +8,9 @@ public class ActivePage : MonoBehaviour {
     public bool inEditMode;
 
     public GameObject selection_prefab;
-    public GameObject frame_quad;
     private Renderer frame_quad_rend;
     private Transform cursor_transform;
+    private TextEditing text_script;
 
     private bool cursor_on_page = false;
     public float selection_time_delay = 0.3f;
@@ -25,22 +25,26 @@ public class ActivePage : MonoBehaviour {
     private Indices start;
 
     public Model model;
-    ModelViewMapping modelview;
+    private ModelViewMapping modelview;
 
     void Start ()
     {
-        if (!frame_quad)
+        // There should be only one frame in a page. If not, it will grab the last one
+        // There should be only one text object in page (for now).
+        GameObject frame_quad = null;
+        foreach (Transform child in transform)
         {
-            // There should be only one frame in a page. If not, it will grab the first one
-            foreach (Transform child in transform) if (child.CompareTag("Frame"))
-                    frame_quad = child.gameObject;
-        }
+            if (child.CompareTag("Frame"))
+                frame_quad = child.gameObject;
 
-        Assert.IsNotNull(frame_quad);
+            if (child.CompareTag("Text"))
+                text_script = child.GetComponent<TextEditing>();
+        }
+        Assert.IsNotNull(frame_quad, "No fram object associated with the page");
         frame_quad_rend = frame_quad.GetComponent<MeshRenderer>();
-        Color new_color = frame_quad_rend.material.color;
-        new_color.a = 0f;
-        frame_quad_rend.material.color = new_color;
+        SetFrameTransparency(0f);
+
+        Assert.IsNotNull(text_script, "No text object associated with the page");
 
         modelview = new ModelViewMapping(margin, width, height);
     }
@@ -70,11 +74,12 @@ public class ActivePage : MonoBehaviour {
                     if (Time.time - selection_timer > selection_time_delay)
                     {
                         var end = modelview.CoordsToIndex(coords);
-                        Debug.Log(model.GetSelection(start, end));
+                        text_script.SelectText(start, end);
                         DrawSelection(start, end);
                     }
                     else
                     {
+                        text_script.DeselectText();
                         RemoveSelection();
                     }
                     start = null;
@@ -89,27 +94,21 @@ public class ActivePage : MonoBehaviour {
             }
         }
 
-
+        // Control inEditMode
         if (!inEditMode && cursor_on_page && Input.GetMouseButtonDown(0))
         {
             inEditMode = true;
-            Color new_color = frame_quad_rend.material.color;
-            new_color.a = 1f;
-            frame_quad_rend.material.color = new_color;
+            SetFrameTransparency(1f);
         }
         else if (inEditMode && cursor_on_page && Input.GetKeyDown(KeyCode.Escape))
         {
             inEditMode = false;
-            Color new_color = frame_quad_rend.material.color;
-            new_color.a = 0.5f;
-            frame_quad_rend.material.color = new_color;
+            SetFrameTransparency(0.5f);
         }
         else if (inEditMode && !cursor_on_page && Input.GetKeyDown(KeyCode.Escape))
         {
             inEditMode = false;
-            Color new_color = frame_quad_rend.material.color;
-            new_color.a = 0f;
-            frame_quad_rend.material.color = new_color;
+            SetFrameTransparency(0f);
         }
     }
 
@@ -122,11 +121,7 @@ public class ActivePage : MonoBehaviour {
             cursor_transform = other.transform;
 
             if (!inEditMode)
-            {
-                Color new_color = frame_quad_rend.material.color;
-                new_color.a = 0.5f;
-                frame_quad_rend.material.color = new_color;
-            }
+                SetFrameTransparency(0.5f);
         }
     }
 
@@ -138,22 +133,15 @@ public class ActivePage : MonoBehaviour {
             cursor_transform = null;
 
             if (!inEditMode)
-            {
-                Color new_color = frame_quad_rend.material.color;
-                new_color.a = 0f;
-                frame_quad_rend.material.color = new_color;
-            }
+                SetFrameTransparency(0f);
+            
         }
     }
 
 
     private void DrawSelection(Indices start, Indices end)
     {
-        if (selection_drawing != null)
-        {
-            foreach (GameObject drawing in selection_drawing)
-                Destroy(drawing);
-        }
+        RemoveSelection();
         selection_drawing = new List<GameObject>();
         
         Vector3 pos;
@@ -182,15 +170,15 @@ public class ActivePage : MonoBehaviour {
         {
             for (int i = start.row + 1; i < end.row; i++)
             {
-                pos = modelview.IndexToCoords(i, (float)model.max_columns / 2.0f - 0.5f);
-                DrawRectangle(new Vector3(pos.x, pos.y, -0.01f), model.max_columns);
+                pos = modelview.IndexToCoords(i, (float)text_script.max_columns / 2.0f - 0.5f);
+                DrawRectangle(new Vector3(pos.x, pos.y, -0.01f), text_script.max_columns);
             }
         }
 
         // First line (for multiline)
-        center_index = (float)(model.max_columns - 1 - start.col) / 2.0f + start.col;
+        center_index = (float)(text_script.max_columns - 1 - start.col) / 2.0f + start.col;
         pos = modelview.IndexToCoords(start.row, center_index);
-        DrawRectangle(new Vector3(pos.x, pos.y, -0.01f), (model.max_columns - start.col));
+        DrawRectangle(new Vector3(pos.x, pos.y, -0.01f), (text_script.max_columns - start.col));
         
         // Last line (for multiline)
         center_index = (float) end.col / 2.0f;
@@ -207,14 +195,22 @@ public class ActivePage : MonoBehaviour {
         selection_drawing.Add(line);
     }
 
-    private void RemoveSelection()
+    public void RemoveSelection()
     {
         if (selection_drawing != null)
         {
             foreach (GameObject drawing in selection_drawing)
                 Destroy(drawing);
+
+            selection_drawing = null;
         }
-        selection_drawing = null;
     }
 
+
+    private void SetFrameTransparency(float alpha)
+    {
+        Color new_color = frame_quad_rend.material.color;
+        new_color.a = alpha;
+        frame_quad_rend.material.color = new_color;
+    }
 }

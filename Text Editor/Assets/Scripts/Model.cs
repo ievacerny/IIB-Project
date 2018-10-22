@@ -3,24 +3,21 @@ using UnityEngine.Assertions;
 
 public class Model {
 
-    // TODO: automatically detect model size based on canvas and font size
     private char[,] model;
-    public int max_rows;
-    public int max_columns;
+    private string text;
 
     public Model(string text, int max_rows, int max_columns)
     {
-        this.max_rows = max_rows;
-        this.max_columns = max_columns;
-        BuildModel(text);
+        BuildModel(text, max_rows, max_columns);
     }
 
-    public void BuildModel(string text)
+    public void BuildModel(string text, int max_rows, int max_columns)
     {
+        this.text = text;
         model = new char[max_rows, max_columns];
         string[] lines = text.Split(new char[] { '\n' });
 
-        // TODO: Assume for now, that text will always initially be within model size. Fix later
+        // Assume, that text will always initially be within model size.
         Assert.IsTrue(lines.Length <= model.GetLength(0), "Too many lines in text");
 
         for (int i = 0; i < lines.Length; i++)
@@ -98,11 +95,26 @@ public class Model {
                     break;
                 }
             }
-            selection += '\n';
+            if (i == end.row || i == model.GetLength(0) - 1)
+                selection += '\n';
             line_start_col = 0;
         }
 
         return selection;
+    }
+
+    public int IndicesToStringIndex(Indices c)
+    {
+        string[] lines = text.Split(new char[] { '\n' });
+
+        string str_before = "";
+
+        for (int i=0; i<c.row; i++)
+            str_before += lines[i];
+
+        str_before += lines[c.row].Substring(0, c.col);
+
+        return str_before.Length;
     }
  
 }

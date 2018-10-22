@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Page
   - Frame
+  - Text
   layers:
   - Default
   - TransparentFX
