@@ -11,13 +11,14 @@ public class ActivePage : MonoBehaviour {
     private Renderer frame_quad_rend;
     private Transform cursor_transform;
     private TextEditing text_script;
+    public Transform text_cursor;
 
     private bool cursor_on_page = false;
     public float selection_time_delay = 0.3f;
     private float selection_timer = 0f;
 
     private float margin = 0.00575f;
-    private float width = 0.0186f;
+    public float width = 0.0186f;
     private float height = 0.0643f;
 
     private List<GameObject> selection_drawing;
@@ -39,12 +40,18 @@ public class ActivePage : MonoBehaviour {
 
             if (child.CompareTag("Text"))
                 text_script = child.GetComponent<TextEditing>();
+
+            if (child.CompareTag("Cursor"))
+                text_cursor = child;
         }
         Assert.IsNotNull(frame_quad, "No fram object associated with the page");
         frame_quad_rend = frame_quad.GetComponent<MeshRenderer>();
         SetFrameTransparency(0f);
 
         Assert.IsNotNull(text_script, "No text object associated with the page");
+
+        Assert.IsNotNull(text_cursor, "No text cursor associated with the page");
+        text_cursor.gameObject.SetActive(false);
 
         modelview = new ModelViewMapping(margin, width, height);
     }
@@ -61,6 +68,7 @@ public class ActivePage : MonoBehaviour {
                 {
                     start = modelview.CoordsToIndex(coords);
                     selection_timer = Time.time;
+                    text_cursor.gameObject.SetActive(false);
                 }
 
                 if (Input.GetMouseButton(0) && selection_timer != 0f && 
@@ -71,9 +79,9 @@ public class ActivePage : MonoBehaviour {
 
                 if (Input.GetMouseButtonUp(0) && start != null)
                 {
+                    var end = modelview.CoordsToIndex(coords);
                     if (Time.time - selection_timer > selection_time_delay)
                     {
-                        var end = modelview.CoordsToIndex(coords);
                         text_script.SelectText(start, end);
                         DrawSelection(start, end);
                     }
@@ -81,6 +89,11 @@ public class ActivePage : MonoBehaviour {
                     {
                         text_script.DeselectText();
                         RemoveSelection();
+                        Vector3 cursor_coords = modelview.IndexToCoords(end.row, end.col + 0.5f);
+                        cursor_coords.z = -0.1f;
+                        text_cursor.localPosition = cursor_coords;
+                        text_cursor.gameObject.SetActive(true);
+                        text_script.UpdateCursorIndex(end);
                     }
                     start = null;
                     selection_timer = 0f;
@@ -97,19 +110,58 @@ public class ActivePage : MonoBehaviour {
         // Control inEditMode
         if (!inEditMode && cursor_on_page && Input.GetMouseButtonDown(0))
         {
+            text_cursor.gameObject.SetActive(true);
+            Indices ind = model.GetLastCharacterIndex();
+            Vector3 cursor_coords = modelview.IndexToCoords(ind.row, ind.col + 0.5f);
+            cursor_coords.z = -0.1f;
+            text_cursor.localPosition = cursor_coords;
+            text_script.UpdateCursorIndex(ind);
             inEditMode = true;
             SetFrameTransparency(1f);
         }
         else if (inEditMode && cursor_on_page && Input.GetKeyDown(KeyCode.Escape))
         {
+            text_cursor.gameObject.SetActive(false);
             inEditMode = false;
             SetFrameTransparency(0.5f);
         }
         else if (inEditMode && !cursor_on_page && Input.GetKeyDown(KeyCode.Escape))
         {
+            text_cursor.gameObject.SetActive(false);
             inEditMode = false;
             SetFrameTransparency(0f);
         }
+
+        // Control cursor position with arrows
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            Vector3 cursor_coords = text_cursor.localPosition;
+            cursor_coords.x -= width;
+            text_cursor.localPosition = cursor_coords;
+            text_script.UpdateCursorIndex(modelview.CoordsToIndex(cursor_coords));
+        }
+        else if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            Vector3 cursor_coords = text_cursor.localPosition;
+            cursor_coords.x += width;
+            text_cursor.localPosition = cursor_coords;
+            text_script.UpdateCursorIndex(modelview.CoordsToIndex(cursor_coords));
+        }
+        else if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            Vector3 cursor_coords = text_cursor.localPosition;
+            cursor_coords.y += height;
+            text_cursor.localPosition = cursor_coords;
+            text_script.UpdateCursorIndex(modelview.CoordsToIndex(cursor_coords));
+        }
+        else if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            Vector3 cursor_coords = text_cursor.localPosition;
+            cursor_coords.y -= height;
+            text_cursor.localPosition = cursor_coords;
+            text_script.UpdateCursorIndex(modelview.CoordsToIndex(cursor_coords));
+        }
+
     }
 
 

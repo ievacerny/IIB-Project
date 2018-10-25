@@ -15,15 +15,19 @@ public class TextEditing : MonoBehaviour
 
     private Indices selected_text_ind;
     private string selected_text =  "";
+    public int cursor_index = 0;
+    private string old_text = "";
 
-    Model model;
+    private Model model;
 
     void Start()
     {
         full_text = GetComponent<TextMesh>();
+        Debug.Log(full_text.text.Length);
         page = transform.GetComponentInParent<ActivePage>();
         model = new Model(full_text.text, max_rows, max_columns);
         page.model = model;
+        cursor_index = model.IndicesToStringIndex(model.GetLastCharacterIndex()) + 1;
     }
 
     void Update()
@@ -32,12 +36,15 @@ public class TextEditing : MonoBehaviour
         {
             if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Input.GetKeyDown(KeyCode.V))
             {
-                string new_text = GUIUtility.systemCopyBuffer;
-                full_text.text = WrapLines(full_text.text + new_text);
-                model.BuildModel(full_text.text, max_rows, max_columns);
+                string new_text = full_text.text;
+                string copied_text = GUIUtility.systemCopyBuffer;
+                new_text = new_text.Substring(0, cursor_index) + copied_text + new_text.Substring(cursor_index);
+                cursor_index += copied_text.Length;
                 // Deselect previously selected text
                 DeselectText();
                 page.RemoveSelection();
+                UpdateCursorIndex(model.GetLastCharacterIndex());
+                UpdateText(new_text);
                 return; // Return so that V is not entered as part of the text
             }
 
@@ -50,6 +57,12 @@ public class TextEditing : MonoBehaviour
                 return; // Return so that C is not entered as part of the text
             }
 
+            if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Input.GetKeyDown(KeyCode.Z))
+            {
+                UndoText();
+                return; // Return so that Z is not entered as part of the text
+            }
+
             if (Input.inputString.Length != 0)
             {
                 string new_text = full_text.text;
@@ -60,12 +73,19 @@ public class TextEditing : MonoBehaviour
                     if (c == '\b') // has backspace/delete been pressed?
                     {
                         if (new_text.Length != 0)
-                            new_text = new_text.Substring(0, new_text.Length - 1);
+                        {
+                            new_text = new_text.Substring(0, cursor_index - 1) + new_text.Substring(cursor_index);
+                            cursor_index -= 1;
+                            Vector3 cursor_coords = page.text_cursor.localPosition;
+                            cursor_coords.x -= page.width;
+                            page.text_cursor.localPosition = cursor_coords;
+                        }
                         if (selected_text != "")
                         {
                             new_text = DeleteSelectedText();
                             DeselectText();
                             page.RemoveSelection();
+                            UpdateCursorIndex(model.GetLastCharacterIndex());
                             break;
                         }
                     }
@@ -75,12 +95,16 @@ public class TextEditing : MonoBehaviour
                     }
                     else
                     {
-                        new_text += c;
+                        new_text = new_text.Substring(0, cursor_index) + c + new_text.Substring(cursor_index);
+                        cursor_index += 1;
+
+                        Vector3 cursor_coords = page.text_cursor.localPosition;
+                        cursor_coords.x += page.width;
+                        page.text_cursor.localPosition = cursor_coords;
                     }
                 }
 
-                full_text.text = WrapLines(new_text);
-                model.BuildModel(full_text.text, max_rows, max_columns);
+                UpdateText(new_text);
             }
         }
     }
@@ -136,5 +160,28 @@ public class TextEditing : MonoBehaviour
     {
         int index = model.IndicesToStringIndex(selected_text_ind);
         return full_text.text.Remove(index, selected_text.Length);
+    }
+
+    public void UpdateCursorIndex(Indices c)
+    {
+        cursor_index = model.IndicesToStringIndex(c) + 1;
+        Debug.Log(cursor_index);
+    }
+
+    public void UpdateText(string text)
+    {
+        old_text = full_text.text;
+        full_text.text = WrapLines(text);
+        model.BuildModel(full_text.text, max_rows, max_columns);
+    }
+
+    public void UndoText()
+    {
+        if (old_text != "")
+        {
+            full_text.text = WrapLines(old_text);
+            model.BuildModel(full_text.text, max_rows, max_columns);
+            old_text = "";
+        }
     }
 }

@@ -281,6 +281,11 @@ Prefab:
       propertyPath: m_TagString
       value: Text
       objectReference: {fileID: 0}
+    - target: {fileID: 23567570169950262, guid: c35a800e256dec64c86a3b599cfadb28,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
   m_IsPrefabAsset: 0
@@ -510,10 +515,6 @@ Prefab:
     - target: {fileID: 1117236307209690, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
       propertyPath: m_Name
       value: Coordinate Test Page
-      objectReference: {fileID: 0}
-    - target: {fileID: 1117236307209690, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}

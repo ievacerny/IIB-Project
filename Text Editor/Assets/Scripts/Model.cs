@@ -105,16 +105,70 @@ public class Model {
 
     public int IndicesToStringIndex(Indices c)
     {
+        Indices last_ind = GetLastCharacterIndex();
+        // FIXME Maybe return -1 to indicate that this is after the last char and force the caller to
+        // call the function again with the correct indices
+        if (last_ind.IsBefore(c))
+            c = last_ind;
+
         string[] lines = text.Split(new char[] { '\n' });
 
         string str_before = "";
 
         for (int i=0; i<c.row; i++)
+        {
             str_before += lines[i];
+            if (i != c.row)
+                str_before += '\n';
+        }
 
+        // FIXME should throw an error (different from above, e.g. -2) to indicate that it's after the last
+        // char in the row
         str_before += lines[c.row].Substring(0, c.col);
 
         return str_before.Length;
     }
- 
+
+    public Indices GetLastCharacterIndex()
+    {
+        Indices c = new Indices();
+
+        for (int i=0; i < model.GetLength(0); i++)
+        {
+            if (model[i, 0] == '\0')
+            {
+                c.row = i - 1;
+                break;
+            }
+        }
+
+        for (int j = 0; j < model.GetLength(1); j++)
+        {
+            if (model[c.row, j] == '\0')
+            {
+                c.col = j - 1;
+                break;
+            }
+        }
+
+        return c;
+    }
+
+    public Indices GetLastCharacterInRowIndex(int row)
+    {
+        Indices c = new Indices();
+        c.row = row;
+
+        for (int j = 0; j < model.GetLength(1); j++)
+        {
+            if (model[c.row, j] == '\0')
+            {
+                c.col = j - 1;
+                break;
+            }
+        }
+
+        return c;
+    }
+
 }
