@@ -1,0 +1,233 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PagePresenter
+{
+
+    #region Model View Refereces
+    private PageModel model;
+    private PageView view;
+    #endregion
+    #region Private Parameters
+    // TODO: Do geometry calculations to calculate this automatically
+    private readonly int max_rows = 15;
+    private readonly int max_columns = 53;
+    #endregion
+    #region Private Attributes
+    private int cursor_string_idx;
+    private string selected_text;
+    #endregion
+
+    #region Constructor
+    public PagePresenter(PageView view, string initial_model)
+    {
+        this.view = view;
+        model = new PageModel(initial_model);
+    }
+    #endregion
+
+    #region Event Functions
+
+    public void Click(Indices loc)
+    {
+        DeselectText();
+        UpdateCursorIndex(IndToIdx(loc));
+    }
+
+    public void ClickDrag(Indices start, Indices end, bool moving = false)
+    {
+        if (!moving)
+            SelectText(IndToIdx(start), IndToIdx(end));
+
+        view.DrawSelection(start, end, max_columns);
+    }
+
+    public void ArrowKeys(KeyCode keycode)
+    {
+        switch (keycode)
+        {
+            case KeyCode.LeftArrow:
+                UpdateCursorIndex(cursor_string_idx - 1);
+                break;
+            case KeyCode.RightArrow:
+                UpdateCursorIndex(cursor_string_idx + 1);
+                break;
+            case KeyCode.UpArrow:
+                Indices cur_up = IdxToInd(cursor_string_idx);
+                cur_up.row -= 1;
+                UpdateCursorIndex(IndToIdx(cur_up));
+                break;
+            case KeyCode.DownArrow:
+                Indices cur_down = IdxToInd(cursor_string_idx);
+                cur_down.row += 1;
+                UpdateCursorIndex(IndToIdx(cur_down));
+                break;
+        }
+
+    }
+
+    public void InputString(string input_string)
+    {
+        foreach (char c in input_string)
+        {
+            string new_text = model.GetText();
+            // \b, \n and \r are the only supported characters in inputString
+
+            if (c == '\b') // backspace
+            {
+                if (selected_text != "")
+                {
+                    DeleteText(selected_text.Length);
+                    DeselectText();
+                }
+                else if (new_text.Length != 0)
+                {
+                    DeleteText(1);
+                }
+                continue;
+            }
+
+            // All the other characters are simply inserted (or they overwrite selection)
+            string char_to_insert = c.ToString();
+            if (char_to_insert == "r")
+                char_to_insert = "\n";
+            
+            if (selected_text != "")
+            {
+                DeleteText(selected_text.Length);
+                DeselectText();
+            }
+            new_text = InsertText(char_to_insert);
+            UpdateCursorIndex(cursor_string_idx + 1);
+        }
+    }
+
+    public void Paste()
+    {
+        // Modify the text
+        string copied_text = GUIUtility.systemCopyBuffer;
+        string new_text = InsertText(copied_text);
+        view.UpdateRenderedText(WrapLines(new_text));
+        // Update cursor position
+        UpdateCursorIndex(cursor_string_idx + copied_text.Length);
+        // Deselect previously selected text
+        DeselectText();
+    }
+
+    public void Copy()
+    {
+        if (selected_text == "")
+            Debug.Log("No text selected");
+        else
+            GUIUtility.systemCopyBuffer = selected_text;
+    }
+
+    public void Undo()
+    {
+        model.Undo();
+        string new_text = model.GetText();
+        view.UpdateRenderedText(WrapLines(new_text));
+    }
+
+    public void Redo()
+    {
+        model.Redo();
+        string new_text = model.GetText();
+        view.UpdateRenderedText(WrapLines(new_text));
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    private void UpdateCursorIndex(int new_idx)
+    {
+        cursor_string_idx = new_idx;
+        Indices cursor_position = IdxToInd(cursor_string_idx);
+        view.SetTextCursorPosition(cursor_position);
+    }
+
+    private void SelectText(int start_idx, int end_idx)
+    {
+        selected_text = model.GetSelection(start_idx, end_idx);
+        UpdateCursorIndex(start_idx);
+    }
+
+    private void DeselectText()
+    {
+        selected_text = "";
+        view.RemoveSelection();
+    }
+
+    private string InsertText(string text_to_insert)
+    {
+        string new_text = model.GetText();
+        new_text = (new_text.Substring(0, cursor_string_idx) + text_to_insert +
+                    new_text.Substring(cursor_string_idx));
+        model.UpdateModel(new_text);
+        return new_text;
+    }
+
+    private string DeleteText(int length)
+    {
+        string new_text = model.GetText();
+        new_text = (new_text.Substring(0, cursor_string_idx) +
+                    new_text.Substring(cursor_string_idx + length));
+        model.UpdateModel(new_text);
+        return new_text;
+    }
+
+    private string WrapLines(string text)
+    {
+        string[] original_lines = text.Split(new char[] { '\n' });
+
+        List<string> wrapped_lines_list = new List<string>();
+
+        foreach (string line in original_lines)
+        {
+            if (line.Length > max_columns)
+            {
+                string current_line = line;
+                while (current_line.Length > max_columns)
+                {
+                    // Find the last space before the character limit
+                    int space_index = current_line.LastIndexOf(' ', max_columns);
+                    if (space_index == -1)
+                        space_index = max_columns - 1; // -1 to get around the space issue
+                    wrapped_lines_list.Add(current_line.Substring(0, space_index + 1));
+                    current_line = current_line.Substring(space_index + 1);
+                }
+                wrapped_lines_list.Add(current_line);
+            }
+            else
+            {
+                wrapped_lines_list.Add(line);
+            }
+        }
+
+        string wrapped_lines = string.Join("\n", wrapped_lines_list.ToArray());
+
+        return wrapped_lines;
+    }
+
+    #endregion
+
+    #region Coordinate Conversion
+
+    private Indices IdxToInd(int inx)
+    {
+        // TODO Write IdxToInd
+        Debug.LogError("IdxToInd not yet implemented");
+        return new Indices { row = 0, col = 0 };
+    }
+
+    private int IndToIdx(Indices ind)
+    {
+        // TODO Write IndToIdx
+        Debug.LogError("IndToIdx not yet implemented");
+        return 0;
+    }
+
+    #endregion
+}

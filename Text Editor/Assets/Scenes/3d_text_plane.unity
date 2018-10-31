@@ -239,7 +239,9 @@ Prefab:
       propertyPath: m_Text
       value: 'Gifford Woods State Park is a state park located at
 
-        the base of Pico Peak in Killington, Vermont. The
+        the base of Pico Peak in
+
+        Killington, Vermont. The
 
         wooded park provides camping, picnic, and fishing
 
@@ -515,6 +517,10 @@ Prefab:
     - target: {fileID: 1117236307209690, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
       propertyPath: m_Name
       value: Coordinate Test Page
+      objectReference: {fileID: 0}
+    - target: {fileID: 1106552106231592, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}
+      propertyPath: m_TagString
+      value: Text Cursor
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c35a800e256dec64c86a3b599cfadb28, type: 2}

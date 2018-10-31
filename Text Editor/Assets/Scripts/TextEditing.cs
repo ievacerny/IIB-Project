@@ -6,7 +6,6 @@ using UnityEngine.Assertions;
 
 public class TextEditing : MonoBehaviour
 {
-    // TODO: Do geometry calculations to calculate this automatically
     public int max_rows = 15;
     public int max_columns = 53;
 

@@ -8,6 +8,7 @@ TagManager:
   - Frame
   - Text
   - Cursor
+  - Text Cursor
   layers:
   - Default
   - TransparentFX
