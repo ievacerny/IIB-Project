@@ -11,12 +11,12 @@ public class PagePresenter
     #endregion
     #region Private Parameters
     // TODO: Do geometry calculations to calculate this automatically
-    private readonly int max_rows = 15;
+    // private readonly int max_rows = 15;
     private readonly int max_columns = 53;
     #endregion
     #region Private Attributes
     private int cursor_string_idx;
-    private string selected_text;
+    private string selected_text = "";
     #endregion
 
     #region Constructor
@@ -24,6 +24,8 @@ public class PagePresenter
     {
         this.view = view;
         model = new PageModel(initial_model);
+        view.UpdateRenderedText(WrapLines(initial_model));
+        UpdateCursorIndex(initial_model.Length);
     }
     #endregion
 
@@ -40,11 +42,15 @@ public class PagePresenter
         if (!moving)
             SelectText(IndToIdx(start), IndToIdx(end));
 
+        if (end.IsBefore(start))
+            UpdateCursorIndex(IndToIdx(end));
+
         view.DrawSelection(start, end, max_columns);
     }
 
     public void ArrowKeys(KeyCode keycode)
     {
+        DeselectText();
         switch (keycode)
         {
             case KeyCode.LeftArrow:
@@ -71,7 +77,7 @@ public class PagePresenter
     {
         foreach (char c in input_string)
         {
-            string new_text = model.GetText();
+            string current_text = model.GetText();
             // \b, \n and \r are the only supported characters in inputString
 
             if (c == '\b') // backspace
@@ -81,16 +87,17 @@ public class PagePresenter
                     DeleteText(selected_text.Length);
                     DeselectText();
                 }
-                else if (new_text.Length != 0)
+                else if (current_text.Length != 0)
                 {
                     DeleteText(1);
                 }
+                UpdateCursorIndex(cursor_string_idx - 1);
                 continue;
             }
 
             // All the other characters are simply inserted (or they overwrite selection)
             string char_to_insert = c.ToString();
-            if (char_to_insert == "r")
+            if (char_to_insert == "\r")
                 char_to_insert = "\n";
             
             if (selected_text != "")
@@ -98,7 +105,7 @@ public class PagePresenter
                 DeleteText(selected_text.Length);
                 DeselectText();
             }
-            new_text = InsertText(char_to_insert);
+            InsertText(char_to_insert);
             UpdateCursorIndex(cursor_string_idx + 1);
         }
     }
@@ -107,12 +114,12 @@ public class PagePresenter
     {
         // Modify the text
         string copied_text = GUIUtility.systemCopyBuffer;
-        string new_text = InsertText(copied_text);
-        view.UpdateRenderedText(WrapLines(new_text));
+        InsertText(copied_text);
         // Update cursor position
         UpdateCursorIndex(cursor_string_idx + copied_text.Length);
         // Deselect previously selected text
         DeselectText();
+        view.ShowTextCursor(true);
     }
 
     public void Copy()
@@ -125,16 +132,20 @@ public class PagePresenter
 
     public void Undo()
     {
+        DeselectText();
         model.Undo();
         string new_text = model.GetText();
         view.UpdateRenderedText(WrapLines(new_text));
+        UpdateCursorIndex(model.GetText().Length);
     }
 
     public void Redo()
     {
+        DeselectText();
         model.Redo();
         string new_text = model.GetText();
         view.UpdateRenderedText(WrapLines(new_text));
+        UpdateCursorIndex(model.GetText().Length);
     }
 
     #endregion
@@ -143,6 +154,11 @@ public class PagePresenter
 
     private void UpdateCursorIndex(int new_idx)
     {
+        if (new_idx < 0)
+            new_idx = 0;
+        else if (new_idx > model.GetText().Length)
+            new_idx = model.GetText().Length;
+
         cursor_string_idx = new_idx;
         Indices cursor_position = IdxToInd(cursor_string_idx);
         view.SetTextCursorPosition(cursor_position);
@@ -158,15 +174,17 @@ public class PagePresenter
     {
         selected_text = "";
         view.RemoveSelection();
+        view.ShowTextCursor(true);
     }
 
-    private string InsertText(string text_to_insert)
+    private void InsertText(string text_to_insert)
     {
         string new_text = model.GetText();
-        new_text = (new_text.Substring(0, cursor_string_idx) + text_to_insert +
-                    new_text.Substring(cursor_string_idx));
+        // Insert after current index
+        new_text = (new_text.Substring(0, cursor_string_idx+1) + text_to_insert +
+                    new_text.Substring(cursor_string_idx+1));
         model.UpdateModel(new_text);
-        return new_text;
+        view.UpdateRenderedText(WrapLines(new_text));
     }
 
     private string DeleteText(int length)
@@ -175,6 +193,7 @@ public class PagePresenter
         new_text = (new_text.Substring(0, cursor_string_idx) +
                     new_text.Substring(cursor_string_idx + length));
         model.UpdateModel(new_text);
+        view.UpdateRenderedText(WrapLines(new_text));
         return new_text;
     }
 
@@ -215,18 +234,52 @@ public class PagePresenter
 
     #region Coordinate Conversion
 
-    private Indices IdxToInd(int inx)
+    private Indices IdxToInd(int idx)
     {
-        // TODO Write IdxToInd
-        Debug.LogError("IdxToInd not yet implemented");
+        string model_text = model.GetText();
+        string view_text = view.GetRenderedText();
+
+        string[] view_lines = view_text.Split(new char[] { '\n' });
+
+        int view_idx = 0; int line_breaks = 0;
+        for (int i=0; i<view_lines.Length; i++)
+        {
+            if (view_idx + view_lines[i].Length >= idx + line_breaks)
+            {
+                return new Indices {
+                    row = i,
+                    col = idx + line_breaks - view_idx
+                };
+            }
+
+            if (model_text[view_idx + view_lines[i].Length - line_breaks] != '\n')
+                line_breaks++;
+
+            view_idx += view_lines[i].Length + 1; // +1 for \n char that is not in the line
+        }
+        // Not found error
+        Debug.LogError("Indices not found");
         return new Indices { row = 0, col = 0 };
     }
 
     private int IndToIdx(Indices ind)
     {
-        // TODO Write IndToIdx
-        Debug.LogError("IndToIdx not yet implemented");
-        return 0;
+        string model_text = model.GetText();
+        string view_text = view.GetRenderedText();
+
+        string[] view_lines = view_text.Split(new char[] { '\n' });
+
+        int view_idx = 0; int line_breaks = 0;
+        for (int i=0; i<ind.row; i++)
+        {
+            if (model_text[view_idx + view_lines[i].Length - line_breaks] != '\n')
+                line_breaks++;
+
+            view_idx += view_lines[i].Length + 1; // +1 for \n char that is not in the line
+        }
+        view_idx += ind.col;
+
+        return view_idx - line_breaks;
     }
 
     #endregion

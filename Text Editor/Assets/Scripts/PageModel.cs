@@ -14,6 +14,7 @@ public class PageModel{
     public PageModel(string initial_model)
     {
         text = initial_model;
+        undo_stack.Push(text);
     }
     #endregion
 
@@ -80,7 +81,6 @@ public class PageModel{
         {
             return text[i1].ToString();
         }
-
         return text.Substring(i1, i2 - i1 + 1);
     }
 
@@ -105,11 +105,12 @@ public class PageModel{
     {
         text = new_text;
         undo_stack.Push(text);
+        redo_stack.Clear();
     }
 
     public void Undo()
     {
-        if (undo_stack.Count != 0)
+        if (undo_stack.Count > 1)
         {
             redo_stack.Push(undo_stack.Pop());
             text = undo_stack.Peek();

@@ -29,7 +29,8 @@ public class PageView : MonoBehaviour {
 
     #region Unity Control
 
-    void Start () {
+    void Start()
+    {
         presenter = new PagePresenter(this, rendered_text.text);
 
         if (text_cursor == null)
@@ -40,11 +41,22 @@ public class PageView : MonoBehaviour {
             }
 
         Assert.IsNotNull(text_cursor, "No text cursor associated with the page");
-        text_cursor.gameObject.SetActive(false);
+
+        this.enabled = false;
+    }
+
+    private void OnEnable()
+    {
+        ShowTextCursor(true);
+    }
+
+    private void OnDisable()
+    {
+        ShowTextCursor(false);
     }
 	
-	void Update () {
-        
+	void Update ()
+    {    
         // Mouse clicks
         if (mouse_cursor != null)
         {
@@ -55,7 +67,7 @@ public class PageView : MonoBehaviour {
                 {
                     selection_start = CoordsToInd(mouse_coords);
                     selection_timer = Time.time;
-                    text_cursor.gameObject.SetActive(false);
+                    ShowTextCursor(false);
                 }
 
                 if (Input.GetMouseButton(0) && selection_timer != 0f &&
@@ -73,7 +85,7 @@ public class PageView : MonoBehaviour {
                     else
                     {
                         presenter.Click(CoordsToInd(mouse_coords));
-                        text_cursor.gameObject.SetActive(true);
+                        ShowTextCursor(true);
                     }
                     selection_start = null;
                     selection_timer = 0f;
@@ -118,6 +130,11 @@ public class PageView : MonoBehaviour {
 
     #region Update Methods
 
+    public string GetRenderedText()
+    {
+        return rendered_text.text;
+    }
+
     public void UpdateRenderedText(string text)
     {
         rendered_text.text = text;
@@ -127,6 +144,11 @@ public class PageView : MonoBehaviour {
     {
         text_cursor.localPosition = IndToCoords(
             ind.row, ind.col + 0.5f, object_z);
+    }
+
+    public void ShowTextCursor(bool show)
+    {
+        text_cursor.gameObject.SetActive(show);
     }
 
     public void RemoveSelection()
@@ -153,7 +175,7 @@ public class PageView : MonoBehaviour {
             end = temp_ind;
         }
         
-        int no_lines = start.row - end.row + 1;
+        int no_lines = end.row - start.row + 1;
 
         float center_index; int selection_length; Vector3 pos;
 
@@ -188,6 +210,14 @@ public class PageView : MonoBehaviour {
         selection_length = end.col + 1;
         pos = IndToCoords(end.row, center_index, object_z);
         DrawRectangle(pos, selection_length);
+    }
+
+    public void SetMouseCursor(Transform mouse_cursor)
+    {
+        if (this.mouse_cursor != null)
+            return;
+
+        this.mouse_cursor = mouse_cursor;
     }
 
     #endregion
