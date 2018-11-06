@@ -6,6 +6,7 @@ public class FingerPointFollowCursor : MonoBehaviour {
 
     private Transform cursor_object_transf;
     private float z_pos;
+    [SerializeField] private float step = 0.1f;
 
     void Start ()
     {
@@ -16,6 +17,11 @@ public class FingerPointFollowCursor : MonoBehaviour {
 	
 	void Update ()
     {
+        if (Input.GetKeyDown(KeyCode.PageDown))
+            z_pos -= step;
+        if (Input.GetKeyDown(KeyCode.PageUp))
+            z_pos += step;
+
         cursor_object_transf.position = Camera.main.ScreenToWorldPoint(
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, z_pos));
     }
