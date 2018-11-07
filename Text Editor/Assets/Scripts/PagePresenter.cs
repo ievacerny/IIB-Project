@@ -20,10 +20,16 @@ public class PagePresenter
     #endregion
 
     #region Constructor
-    public PagePresenter(PageView view, string initial_model)
+    /// <param name="view">Reference to the view object</param>
+    /// <param name="initial_model">Initial text for the model</param>
+    /// <param name="test_model">Reference to the model object for testing purposes only</param>
+    public PagePresenter(PageView view, string initial_model, PageModel test_model = null)
     {
         this.view = view;
-        model = new PageModel(initial_model);
+        if (test_model != null)
+            model = test_model;
+        else
+            model = new PageModel(initial_model);
         view.UpdateRenderedText(WrapLines(initial_model));
         UpdateCursorIndex(initial_model.Length);
     }
@@ -148,6 +154,11 @@ public class PagePresenter
         UpdateCursorIndex(model.GetText().Length);
     }
 
+    public void Reset()
+    {
+        DeselectText();
+    }
+
     #endregion
 
     #region Private Methods
@@ -156,8 +167,8 @@ public class PagePresenter
     {
         if (new_idx < 0)
             new_idx = 0;
-        else if (new_idx > model.GetText().Length)
-            new_idx = model.GetText().Length;
+        else if (new_idx >= model.GetText().Length)
+            new_idx = model.GetText().Length-1;
 
         cursor_string_idx = new_idx;
         Indices cursor_position = IdxToInd(cursor_string_idx);
@@ -234,7 +245,7 @@ public class PagePresenter
 
     #region Coordinate Conversion
 
-    private Indices IdxToInd(int idx)
+    public Indices IdxToInd(int idx)
     {
         string model_text = model.GetText();
         string view_text = view.GetRenderedText();
@@ -244,7 +255,7 @@ public class PagePresenter
         int view_idx = 0; int line_breaks = 0;
         for (int i=0; i<view_lines.Length; i++)
         {
-            if (view_idx + view_lines[i].Length >= idx + line_breaks)
+            if (view_idx + view_lines[i].Length > idx + line_breaks)
             {
                 return new Indices {
                     row = i,
@@ -262,12 +273,15 @@ public class PagePresenter
         return new Indices { row = 0, col = 0 };
     }
 
-    private int IndToIdx(Indices ind)
+    public int IndToIdx(Indices ind)
     {
         string model_text = model.GetText();
         string view_text = view.GetRenderedText();
 
         string[] view_lines = view_text.Split(new char[] { '\n' });
+
+        if (ind.row >= view_lines.Length)
+            return model_text.Length;
 
         int view_idx = 0; int line_breaks = 0;
         for (int i=0; i<ind.row; i++)
@@ -277,9 +291,23 @@ public class PagePresenter
 
             view_idx += view_lines[i].Length + 1; // +1 for \n char that is not in the line
         }
-        view_idx += ind.col;
+        view_idx += Mathf.Min(ind.col, view_lines[ind.row].Length - 1);
 
         return view_idx - line_breaks;
+    }
+
+    #endregion
+
+    #region Testing Interface
+
+    public int GetCursorIndex()
+    {
+        return cursor_string_idx;
+    }
+
+    public string GetSelectedText()
+    {
+        return selected_text;
     }
 
     #endregion

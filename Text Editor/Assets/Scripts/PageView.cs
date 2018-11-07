@@ -52,7 +52,10 @@ public class PageView : MonoBehaviour {
 
     private void OnDisable()
     {
+        presenter.Reset();
         ShowTextCursor(false);
+        selection_start = null;
+        selection_timer = 0f;
     }
 	
 	void Update ()
@@ -128,12 +131,16 @@ public class PageView : MonoBehaviour {
 
     #endregion
 
-    #region Update Methods
+    #region Read Methods
 
     public string GetRenderedText()
     {
         return rendered_text.text;
     }
+
+    #endregion
+
+    #region Update Methods
 
     public void UpdateRenderedText(string text)
     {
@@ -218,6 +225,12 @@ public class PageView : MonoBehaviour {
             return;
 
         this.mouse_cursor = mouse_cursor;
+    }
+
+    public void ChangePresenterReference(PagePresenter new_presenter)
+    {
+        // Needed for testing purposes
+        presenter = new_presenter;
     }
 
     #endregion

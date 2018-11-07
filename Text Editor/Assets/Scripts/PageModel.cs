@@ -27,12 +27,17 @@ public class PageModel{
     /// <returns></returns>
     public char GetLetter(int i)
     {
-        if (i < text.Length)
+        if (i >= 0 && i < text.Length)
             return text[i];
 
-        Debug.LogWarning(string.Format(
-            "Index {0} to GetLetter out of range. Text length: {1}",
-            i, text.Length));
+        if (i < 0)
+            Debug.LogError(string.Format(
+                "Negative index: {0}", i));
+        else if (i >= text.Length)
+            Debug.LogError(string.Format(
+                "Index {0} to GetLetter out of range. Text length: {1}",
+                i, text.Length));
+
         return '\0';
     }
 
@@ -43,22 +48,24 @@ public class PageModel{
     /// <returns></returns>
     public string GetWord(int i)
     {
-        if (text[i] == ' ')
+        if (text[i] == ' ' || text[i] == '\n')
             return "";
-
+        
+        // If start=-1, will start reading from 0. Doesn't influence max
         int start = text.LastIndexOf(' ', i);
         int end = text.IndexOf(' ', i);
+        if (end == -1)
+            end = text.Length;
 
         int line_start = text.LastIndexOf('\n', i);
         int line_end = text.IndexOf('\n', i);
+        if (line_end == -1)
+            line_end = text.Length;
 
         // Word limiting indices will be the smallest range between the 2
         start = (int)Mathf.Max(start, line_start);
         end = (int)Mathf.Min(end, line_end);
 
-        // If start=-1, will start reading from 0
-        if (end == -1)
-            end = text.Length;
 
         int length = end - (start + 1);
 
