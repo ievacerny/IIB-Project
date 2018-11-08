@@ -1,0 +1,40 @@
+Possible user interface with mixed reality is voice.
+
+One of the attributes of good interaction design is allowing Natural User Interfaces: those which are invisible to the user, and remain invisible as we learn them. Some examples of these interfaces are speech recognition, direct manipulation, and gestures.
+
+4 Brain-Computer interfaces for AR/MR:
+- Gaze
+- Gesture
+- Voice ****Should I consider this - choose between tools and some commands (select, copy, paste, edit, delete)****
+- Controller
+
+1. Gaze
+
+Currently just a central point; working towards eye tracking.
+
+Acts like a cursor. When designing UI, important to keep details close together to prevent too much head movement (not comfortable, causes strain on the neck). Also, looking around for information/interface is not efficient.
+
+2. Gesture
+
+Currently simple gestures on Mixed Reality headsets. Other technologies (e.g. Leap Motion) allow for more advanced gestures. The technologies could be integrated for better user experience.
+
+3. Voice
+
+Designing Voice User Interfaces within mixed reality applications will need both auditory and visual affordances to work hand in hand for an ideal experience.
+
+4. Controller
+
+People don't want to use them because you need to carry an additional device and it breaks the immersion experience.
+
+
+
+Similar to touchscreens in the beginning (before iPhone) - regular people struggle to use it, hence the technology is not very popular.
+
+
+Apple's guide to AR:
+- Opt for direct interaction with objects over onscreen controls
+- Keep interactions simple stupid
+- Use the entire display to engage people
+- Wherever possible, provide hints in context. Placing a three-dimensional rotation indicator around an object, for example, is more intuitive than presenting text-based instructions in an overlay.
+- Be wary of potentially conflicting gestures
+- Explore even more engaging methods of interaction. Gestures aren't the only way for people to interact with virtual objects in AR. Your app can use other factors, like motion and proximity, to bring content to life.
