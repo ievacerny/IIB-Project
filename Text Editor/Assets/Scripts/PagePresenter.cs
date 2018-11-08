@@ -165,8 +165,8 @@ public class PagePresenter
 
     private void UpdateCursorIndex(int new_idx)
     {
-        if (new_idx < 0)
-            new_idx = 0;
+        if (new_idx < -1)
+            new_idx = -1;
         else if (new_idx >= model.GetText().Length)
             new_idx = model.GetText().Length-1;
 
@@ -282,6 +282,8 @@ public class PagePresenter
 
         if (ind.row >= view_lines.Length)
             return model_text.Length;
+        if (ind.row < 0)
+            return -1;
 
         int view_idx = 0; int line_breaks = 0;
         for (int i=0; i<ind.row; i++)

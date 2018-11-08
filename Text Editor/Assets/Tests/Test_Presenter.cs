@@ -35,6 +35,8 @@ public class TestPresenterCoordinates
     [TestCase("AB\nCDE", "A\nB\nC\nD\nE", 2, 0, 3)]
     [TestCase("AB\nCDE", "A\nB\nC\nD\nE", 1, 6, 1)]
     [TestCase("AB\nCDE", "A\nB\nC\nD\nE", 7, 7, 6)]
+    [TestCase("AB\nCDE", "A\nB\nC\nD\nE", 0, -1, -1)]
+    [TestCase("AB\nCDE", "A\nB\nC\nD\nE", -1, -1, -1)]
     [TestCase("Hello\n\nbeautiful world", "Hello\n\nbeautiful\nworld", 2, 3, 10)]
     public void Test_IndtoIdx(string text, string rend_text, int row, int col, int exp_idx)
     {
