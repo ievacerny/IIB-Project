@@ -91,7 +91,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1791408932966958}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.10000038}
+  m_LocalPosition: {x: 0, y: 0, z: 0.0001000004}
   m_LocalScale: {x: 1.04, y: 1.0666667, z: 1}
   m_Children: []
   m_Father: {fileID: 4688663003570672}
@@ -117,8 +117,8 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1117236307209690}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 16, z: 30}
-  m_LocalScale: {x: 50, y: 30, z: 1}
+  m_LocalPosition: {x: 0, y: -0.13, z: 0.5}
+  m_LocalScale: {x: 0.6, y: 0.4, z: 1}
   m_Children:
   - {fileID: 4040476764933150}
   - {fileID: 224797727249573652}
@@ -237,7 +237,7 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1106552106231592}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -311,7 +311,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 2}
+  m_Size: {x: 1, y: 1, z: 0.02}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!65 &65411815773494950
 BoxCollider:
@@ -332,35 +332,13 @@ TextMesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1397484902543748}
-  m_Text: '12345678901234567890123456789012345678901234567890123
+  m_Text: 'Gifford Woods State Park is a state park located at the base of Pico Peak
+    in Killington, Vermont.
 
-    2----------------------------------------------------
-
-    3----------------------------------------------------
-
-    4----------------------------------------------------
-
-    5----------------------------------------------------
-
-    6----------------------------------------------------
-
-    7----------------------------------------------------
-
-    8----------------------------------------------------
-
-    9----------------------------------------------------
-
-    0----------------------------------------------------
-
-    1----------------------------------------------------
-
-    2----------------------------------------------------
-
-    3----------------------------------------------------
-
-    4----------------------------------------------------
-
-    5-------------------------------------------------'
+    The wooded park provides camping, picnic, and fishing facilities, and has hiking
+    trails, including a portion of the Appalachian Trail. It preserves an area of
+    old-growth forest that has been designated a National Natural Landmark, and is
+    accessible via an interpretive trail.'
   m_OffsetZ: 0
   m_CharacterSize: 1
   m_LineSpacing: 1
@@ -409,7 +387,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1397484902543748}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.020027857, y: 0.033333335, z: 0.99995357}
   m_Children: []
   m_Father: {fileID: 4688663003570672}
