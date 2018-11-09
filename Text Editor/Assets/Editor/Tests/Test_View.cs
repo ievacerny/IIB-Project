@@ -14,6 +14,12 @@ public class TestViewCoordinates
         view = page.GetComponent<PageView>();
     }
 
+    [Test]
+    public void SimpleTest()
+    {
+        Assert.AreEqual(1, 1);
+    }
+
     [TestCase(-0.4855f, 0.4669f, 0, 0)] // Upper left
     [TestCase(-0.4793f, 0.4379f, 0, 0)] // Bottom right
     [TestCase(-0.4830f, 0.4545f, 0, 0)] // Centre
