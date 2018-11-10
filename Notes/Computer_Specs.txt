@@ -23,7 +23,7 @@ GPU: Intel Iris 540
 RAM: 8GB
 DirectX Version 12
 
-Unity; Version 2018.2.12f1 Personal
+Unity; Version 2017.2.0f3 Personal
 Visual Studio Community 2017; Version 15.8.7
     Visual Studio Tools for Unity - 3.8.0.7
     Visual Studio Tools for Universal Windows Apps - 15.0.28010.2046
