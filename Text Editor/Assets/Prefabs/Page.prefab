@@ -364,6 +364,7 @@ MonoBehaviour:
   mouse_cursor: {fileID: 0}
   text_cursor: {fileID: 4238760701597016}
   rendered_text: {fileID: 102608962375419056}
+  frame: {fileID: 23234175943704558}
 --- !u!114 &114553340977480844
 MonoBehaviour:
   m_ObjectHideFlags: 1

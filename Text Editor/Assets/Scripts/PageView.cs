@@ -13,18 +13,20 @@ public class PageView : MonoBehaviour {
     [SerializeField] private Transform mouse_cursor;
     [SerializeField] private Transform text_cursor;
     [SerializeField] private TextMesh rendered_text;
+    [SerializeField] public Renderer frame;
     #endregion
     #region Private Parameters
     private readonly float col_margin = 0.00575f;
     private readonly float width = 0.0186f;
     private readonly float height = 0.0643f;
-    private readonly float object_z = -0.1f;
+    private readonly float object_z = -0.00001f;
     private readonly float selection_time_delay = 0.3f;
     #endregion
     #region Private Attributes
     private List<GameObject> selection_drawing;
     private Indices selection_start;
     private float selection_timer = 0f;
+    private GameObject index_finger;
     #endregion
 
     #region Unity Control
@@ -57,9 +59,24 @@ public class PageView : MonoBehaviour {
         selection_start = null;
         selection_timer = 0f;
     }
-	
-	void Update ()
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
+        presenter.Click(CoordsToInd(finger_coords));
+        SetFrameTransparency(1f);
+        ShowTextCursor(true);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        SetFrameTransparency(0.5f);
+    }
+
+    void Update ()
     {    
+        //
+
         // Mouse clicks
         if (mouse_cursor != null)
         {
@@ -231,6 +248,13 @@ public class PageView : MonoBehaviour {
     {
         // Needed for testing purposes
         presenter = new_presenter;
+    }
+
+    public void SetFrameTransparency(float alpha)
+    {
+        Color new_color = frame.material.color;
+        new_color.a = alpha;
+        frame.material.color = new_color;
     }
 
     #endregion

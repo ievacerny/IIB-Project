@@ -20,16 +20,19 @@ public class FingerPointFollowCursor : MonoBehaviour {
 	
 	void Update ()
     {
-        //if (Input.GetKeyDown(KeyCode.PageDown))
-        //    z_pos -= step;
-        //if (Input.GetKeyDown(KeyCode.PageUp))
-        //    z_pos += step;
-
-        //cursor_object_transf.position = Camera.main.ScreenToWorldPoint(
-        //    new Vector3(Input.mousePosition.x, Input.mousePosition.y, z_pos));
         if (position_tracking_on)
         {
             cursor_object_transf.position = left_index.position;
+        }
+        else
+        {
+            if (Input.GetKeyDown(KeyCode.PageDown))
+                z_pos -= step;
+            if (Input.GetKeyDown(KeyCode.PageUp))
+                z_pos += step;
+
+            cursor_object_transf.position = Camera.main.ScreenToWorldPoint(
+                new Vector3(Input.mousePosition.x, Input.mousePosition.y, z_pos));
         }
     }
 
