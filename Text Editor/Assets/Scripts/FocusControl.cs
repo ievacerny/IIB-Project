@@ -47,7 +47,7 @@ public class FocusControl : MonoBehaviour {
         page_script.enabled = page_active;
         if (page_active)
         {
-            page_script.SetMouseCursor(transform);
+            //page_script.SetMouseCursor(transform);
             page_script.SetFrameTransparency(0.5f);
         }
         else

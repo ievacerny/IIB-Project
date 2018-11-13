@@ -26,7 +26,9 @@ public class PageView : MonoBehaviour {
     private List<GameObject> selection_drawing;
     private Indices selection_start;
     private float selection_timer = 0f;
-    private GameObject index_finger;
+    private float default_collider_scale = 0.02f;
+    private float extended_collider_scale = 0.1f;
+    private bool selection_mode = false;
     #endregion
 
     #region Unity Control
@@ -62,15 +64,50 @@ public class PageView : MonoBehaviour {
 
     private void OnTriggerEnter(Collider other)
     {
-        Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
-        presenter.Click(CoordsToInd(finger_coords));
-        SetFrameTransparency(1f);
-        ShowTextCursor(true);
+        if (other.gameObject.name == "IndexTip" && !selection_mode)
+        {
+            Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
+            presenter.Click(CoordsToInd(finger_coords));
+            SetFrameTransparency(1f);
+            ShowTextCursor(true);
+        }
+        else if (other.gameObject.name == "MiddleTip")
+        {
+            selection_mode = true;
+            Vector3 size = transform.GetComponent<BoxCollider>().size;
+            size.z = extended_collider_scale;
+            transform.GetComponent<BoxCollider>().size = size;
+            ShowTextCursor(false);
+            Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
+            selection_start = CoordsToInd(finger_coords);
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (other.gameObject.name == "MiddleTip")
+        {
+            Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
+            presenter.ClickDrag(selection_start, CoordsToInd(finger_coords), true);
+        }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        SetFrameTransparency(0.5f);
+        if (other.gameObject.name == "IndexTip" && !selection_mode)
+        {
+            SetFrameTransparency(0.5f);
+        }
+        else if (other.gameObject.name == "MiddleTip")
+        {
+            selection_mode = false;
+            Vector3 size = transform.GetComponent<BoxCollider>().size;
+            size.z = default_collider_scale;
+            transform.GetComponent<BoxCollider>().size = size;
+            Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
+            presenter.ClickDrag(selection_start, CoordsToInd(finger_coords), false);
+            SetFrameTransparency(0.5f);
+        }
     }
 
     void Update ()
