@@ -16,9 +16,10 @@ public class PageView : MonoBehaviour {
     [SerializeField] public Renderer frame;
     #endregion
     #region Private Parameters
-    private readonly float col_margin = 0.00575f;
-    private readonly float width = 0.0186f;
-    private readonly float height = 0.0643f;
+    private readonly float col_margin = 0.01824f;
+    private readonly float row_margin = 0.0105f;
+    private readonly float width = 0.01806f;
+    private readonly float height = 0.0626f;
     private readonly float object_z = -0.00001f;
     private readonly float selection_time_delay = 0.3f;
     #endregion
@@ -73,6 +74,7 @@ public class PageView : MonoBehaviour {
         }
         else if (other.gameObject.name == "MiddleTip")
         {
+            SetFrameTransparency(1f);
             selection_mode = true;
             Vector3 size = transform.GetComponent<BoxCollider>().size;
             size.z = extended_collider_scale;
@@ -325,8 +327,9 @@ public class PageView : MonoBehaviour {
         // x - row, y - col
         Indices ind = new Indices
         {
-            row = (int)((coords.y - 0.5f) / -height),
-            col = (int)((coords.x + (0.5f - col_margin)) / width),
+            //(int)0.8 == (int)-0.8, but floor(0.8) == 0 and floor(-0.8) == -1
+            row = Mathf.FloorToInt((coords.y - (0.5f - row_margin)) / -height),
+            col = Mathf.FloorToInt((coords.x + (0.5f - col_margin)) / width),
         };
         
         return ind;
@@ -336,7 +339,7 @@ public class PageView : MonoBehaviour {
     {
         var coords = new Vector3
         {
-            y = (row + 0.5f) * -height + 0.5f,
+            y = (row + 0.5f) * -height + (0.5f - row_margin),
             x = (col + 0.5f) * width - (0.5f - col_margin),
             z = z_coord
         };
