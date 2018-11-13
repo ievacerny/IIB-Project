@@ -102,7 +102,7 @@ public class TestPresenterEvents
         return objects;
     }
 
-    [TestCase(3, 10, 162, 3, 10)] // On the text
+    [TestCase(3, 4, 156, 3, 4)] // On the text
     [TestCase(6, 10, 234, 5, 16)] // After the text
     [TestCase(1, 50, 96, 1, 44)] // After the text in line
     public void Test_Click(int loc_row, int loc_col, int exp_idx, int exp_loc_row, int exp_loc_col)
