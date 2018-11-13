@@ -80,14 +80,20 @@ public class PageModel{
     /// <returns></returns>
     public string GetSelection(int i1, int i2)
     {
+        // Make sure i1 < i2
         if (i1 > i2)
         {
             int temp = i1; i1 = i2; i2 = temp;
         }
+        // If i1 is after text - return empty selection
+        if (i1 >= text.Length)
+            return "";
         else if (i1 == i2)
         {
             return text[i1].ToString();
         }
+        // Clip selection to within text limits
+        i2 = Mathf.Min(i2, text.Length - 1);
         return text.Substring(i1, i2 - i1 + 1);
     }
 
