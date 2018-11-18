@@ -166,16 +166,25 @@ public class PageView : MonoBehaviour {
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
             if (Input.GetKeyDown(KeyCode.C))
+            {
                 presenter.Copy();
+                return;  // Return so that the letter is not entered as part of input string
+            }
             else if (Input.GetKeyDown(KeyCode.V))
+            {
                 presenter.Paste();
+                return;
+            }
             else if (Input.GetKeyDown(KeyCode.Z))
+            {
                 presenter.Undo();
+                return;
+            }
             else if (Input.GetKeyDown(KeyCode.Y))
+            {
                 presenter.Redo();
-
-            // Return so that the letter is not entered as part of input string
-            return;
+                return;
+            }
         }
 
         // Input string
