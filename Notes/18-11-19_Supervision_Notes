@@ -1,0 +1,16 @@
+Parameterise the selections
+
+Dominant hand making fine selection, non dominant hand doing borader selection (e.g. confirming action)
+
+Slow movement - stick the selection. Fast movement on a different action in a different axis could terminate action.
+
+Could be timeout as well if noise of movement is higher than timeout noise
+
+Think of what are the governing parameters. Is there a tradeoff between duration and noise
+
+- Effective performance - error below a certain level and improve the timeout
+- for minimal learning, not parameterising, give it to users to tests
+
+People can be efficient within short time.
+
+Gesture recognition can also be low parameter - success or Not
