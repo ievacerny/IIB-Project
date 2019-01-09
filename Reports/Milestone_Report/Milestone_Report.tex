@@ -1,0 +1,228 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{epsfig}
+\usepackage{amsmath,graphicx,psfrag,pstcol,float,caption,listings, multirow}
+\def\n{\noindent}
+\def\u{\underline}
+\def\hs{\hspace}
+\newcommand{\thrfor}{.^{\displaystyle .} .}
+\newcommand{\bvec}[1]{{\bf #1}}
+
+\begin{document}
+
+% --------- TITLE PAGE
+
+\noindent
+\rule{\textwidth}{0.5mm}
+\begin{center}
+{\bf ENGINEERING TRIPOS PART IIB}
+\end{center}
+\vspace{0.5cm} {\bf PART IIB PROJECT \hfill TECHNICAL MILESTONE REPORT}
+\vspace{0.5cm}
+\begin{center}
+{\bf \LARGE \textit{MIXED REALITY ANNOTATION SYSTEMS} \\}
+\end{center}
+STUDENT \hfill SUPERVISOR \\
+{\bf Ieva Cernyte \hfill Per Ola Kristensson \\}
+\rule{\textwidth}{0.5mm}
+\vspace{0.5cm}
+
+% --------- SUMMARY
+
+\noindent{\bf Summary}
+
+The main goal of the project is to design an efficient way of editing text without any specific input device and with minimal learning. 
+
+
+% --------- CONTEXT / MOTIVATION FOR WORK
+\section{Introduction}
+
+The use of MR is increasing. It proved to be and efficient way of always having the information right in front when having to move around a lot when working. However most people also require the use of their hand when doing such jobs, therefore,  having an input device is not convenient. And currently those are the main ways of interacting with the virtual objects. Another way of interacting is Voice, which can be comfortable, but it has its own problems - noisy environments, super quiet environments, language barriers. Then we have gaze and gestures. Gaze is quite limited on its own. Some hand interactions are available, but they are very limited, and the specific text editing scene has not been investigated thoroughly. The use of gestures would be very comfortable, but it faces challenges. The accuracy of sensors is not great and that brings up the need for inference and probabilistic approach to the interface. Also, there is no unified convention yet when it comes to gestures and it is not clear how to map digital actions to physical articulations in an intuitive way. Also, the interactions depend on the environment (??? How to expand on that???)
+
+The goal of the project is to build a system for editing text using gaze and hands only, where the controls are efficient and easy to learn. 
+
+% ?????????? WHERE SHOULD OBJECTIVES BE ?????????????????????????????
+
+% --------- METHOD / PLAN / OBJECTIVES?
+
+No implemented text editor was flexible enough to act as a test-bed/sandbox for the system, therefore a text editor platform had to be built from scratch. The platform was built in Unity game engine, code written in c\#. Leap motion hand sensors were used. The system would idealy be used with Hololens but LeapMotion-Hololens connections is not very stable. Oculus Rift is an alternative headset to be used since the focus of the project is interaction and it would be the same in both. ..........
+
+% Verification and validation plans here? as in method on how to do that
+
+
+% --------- PROGRESS SO FAR
+% The app
+The text editor app is quite simple. It had a page and text on that page. Multiple pages support is built in, but it is not currently being used. The page to be activated is selected through gaze. Once the page is active, all the editing functions are enabled. All of the supported functions were first implemented for the use with keyboard. This was done to allow the testing of the editor. The editor uses a monospace font in order to avoid geometrical calculations that are not crucial to the project. Basic line wrapping was implemented as well. Apart from the basic entering and editing text additional functions are supported: select, delete selected, copy, paste, undo, redo. These functions were implemented in a similar way as in regular computer, but with Shift button instead of Ctrl because those are the default Unity editor shortcuts.
+
+- Copy/Paste works by taking the selected text and pushing it to the clipboard of the processing computer. This has only been tested on the computer, therefore it definitely works when the device is connected to that. However brief research suggests that the same should be possible on the Hololens. Only Windows systems are supported.
+
+- Undo/Redo is implemented using drop-out stacks. Each one is limited to 10 places. Current state is the top of the Undo stack. Undo action takes the top state and pushes it onto the redo stack. Redo does the opposite. Redo stack is cleared if the text is edited through any other actions apart from undo/redo.
+
+Text cursor placement is controlled via the mouse cursor. One click places the cursor, click and drag enter selection mode where the release is the confirming action.
+
+The Text Editor was built using the Model-View-Presenter structure. A basic diagram is shown in Figure \ref{mvp}. Model saves the text and the states in the undo/redo stacks. View is responsible for handling inputs and the Unity scene construction/modification. The view and the model never communicate directly. The communication is done through the presenter. When a specific input is performed that corresponds to an action, the view activates the action routine in the presenter. It is the one that contains all the logic as to what should happen during that action. It gets the information from the model and the view and then sends the updates to both depending on the logic. The framework was chosen to make sure that the what is saved in the model and what is shown are always in sync. There are 3 different coordinate systems in the framework in very specific circumstances the accuracy of conversions might result in a asynchronicity. First system is simply the index of a character in the string, referred to as string\_index. The second is the row and column of the character in a line wrapped text, called indices. And the last is the coordinates of character on the page.
+
+% Finger interactions
+
+At the end of Michaelmas, once the app was finished, the work moved on to hands interactions. It started with single finger interaction. When the finger "touches" the plane, it acts as a single click with the mouse. Touch is detected by having colliders on the hand models and around the plane. The collider on the finger apears only if the index finger is extended. Limiting the hand position avoid accidental touches.
+
+Then an attempt at selection mode was implemented. It was done by asking the index and middle fingers to be extended, then touching the plane to enter selection mode, moving the finger paralle to the plane to choose the text to select and finally moving the fingers away from the plane to confirm selection. To avoid accidental confirmation of the action when the hand is simply moving, the collider on the plane in selection mode is larger than the regular collider on the plane. However, this decreased the accuracy of the end point due to the increased distance between the plane and the finger and the perspective view. 
+
+% Testing
+
+The editor has been thoroughly tested using a combination of unit test run using Unity Test Runner and manual tests. 66 unit tests have been written. Model is covered quite extensively, presented has only the coordinate conversion functions covered and the view is not covered at all. This is due to complex test procedures that would be required to verify that the view has been changed/updated in the expected way and as the presenter is modifying the view as well, the tests for it were not written. The visual verification requiring tests are done manually. Manual testcases have been described in a text document. 
+
+Unit tests are run every time there is a code change in the editor. Manual testcases will only be done if there is a "significant" change or if there is a reason to believe that the behaviour might have changed.
+
+The system has also been tested once with the Oculus Rift headset. The single and two finger interactions were working reasonably well considering their rough implementation. With these interactions fatigue could be a significant problem as the cursor/text selection point is where the fingers are, therefore requires the arm to be raised. Also, the visual quality of the text was not great, but it is more due to the limitation of the technology and it is not main focus of the object. Some improvements might be attempted if time allows, but there is unlikely to get much better.
+
+% --------- PLAN FOR THE FUTURE
+
+% Framework for gesture recognition
+The immediate next step is to build the framework for gesture recognition. The are a few different suggestions what representation should be used for gestures (ref papers). Crucial limitations are the lack of data (there's not much time to collect it) and the ability to recognise real time. It would also be good to have a framework that could continuosly guess the gesture as it is still happening to provide feedback to the user and thus improve the user experience. The exact decisions have not yet been finalised for the implementation of this system. Currently an exploration of R-somtehing representation and the use of SVM is being done. Testing of this framework will be done, most likely by writing unit tests. The model will be tested as well by obtaining the confusion matrix/ROC graphs.
+
+% Designing gestures
+After that would be the desgining of the gestures phase. Gesture elicitation approach will be taken and for each action, one gesture will be chosen. A quick theoretical analysis of reasonability will be done on the gestures (implementable, possibility of confusion, accuracy, detectability threshold) and the best ones will be selected. When they are implemented, the ges
+
+% Optimisation of the gestures
+Optimisation of the selected gestures will be done to get the best efficiency possible and to obtain the best confusion matrix results possible. Analysing the difference in speed of the gesture, distance moved, the stretch of the arm required. Analysing what is necessary to reduce the confusion, improve detectability. The data will be from previous papers as well as data collected in the lab. 
+
+% Optimisation of the user experience
+Visual feedback will be added and optimised to some degree to improve the user experience of the interaction techniques.  ??????
+
+% Validation
+If time allows, at the end of the system will be tested with the actual users hoping that it is validated. This would involve asking people to come in and simply using the system to perform predefined tasks, and the after filling in a prepared questionaire. However, it is quite time consuming to do user tests, therefore, this is highly unlikely to happen. 
+
+
+% --------- CONCLUSIONS (the main findings and possibly ideas for future work)
+
+% --------- REFERENCES
+
+
+% ----- TEST PAGE
+\newpage
+\the\baselineskip
+If time allows, at the end of the system will be tested with the actual users hoping that it is validated. This would involve asking people to come in and simply using the system to perform predefined tasks, and the after filling in a prepared questionaire. However, it is quite time consuming to do user tests, therefore, this is highly unlikely to happen. 
+
+asdfsadfsafdsa
+
+asfdsafd
+
+asdfasfda
+
+asfdasfd
+
+asdfasfsa
+
+asdfasfdsa
+
+\vspace{15cm}
+
+asdfasfda
+
+asfdasfd
+
+asfsdfasdfsa
+
+asdfasfsa
+
+If time allows, at the end of the system will be tested with the actual users hoping that it is validated. This would involve asking people to come in and simply using the system to perform predefined tasks, and the after filling in a prepared questionaire. However, it is quite time consuming to do user tests, therefore, this is highly unlikely to happen. However, it is quite time consuming to do user tests, therefore, this is highly unlikely to happen.
+
+
+asdasdkjfbaskdfjbaskjf ksjdf sadkjfsakdjfbskjdfbas
+
+asdfsadfsafdsa
+
+asfdsafd
+
+asdfasfda
+% --------\TEST PAGE
+
+% --------SECTIONS------
+%\begin{enumerate}
+%\item {\bf Section}
+%\end{enumerate}
+% OR
+% \section{Section}
+
+% --------FIGURES-------
+%\begin{figure}[H]
+%	\centering
+%	\captionsetup{justification=centering,margin=2cm}
+%	\makebox[\textwidth][c]{\includegraphics[scale=0.4]{difficult_distribution}}
+%	\caption{Histogram estimates for different $\alpha$ and $\beta$ values}
+%	\label{difficult_dist}
+%\end{figure}
+
+% --------2 FIGURES---------
+%\begin{figure}[H]
+%	\begin{minipage}[c]{0.4\linewidth}
+%		\includegraphics[width=\linewidth]{lines_synth}
+%		\caption{Synthetic data with 127 threshold and 1 resolution}
+%	\end{minipage}
+%	\hfill
+%	\begin{minipage}[c]{0.4\linewidth}
+%		\includegraphics[width=\linewidth]{lines_ct}
+%		\caption{CT scan data with 20 threshold and 1 resolution}
+%	\end{minipage}
+%\end{figure}
+
+% -------SUBIMAGES----------
+%\begin{figure}
+%	\begin{subfigure}{.3\textwidth}
+%		\centering
+%		\includegraphics[width=3cm,height=3.5cm]{example-image-a}
+%		\caption{this is the first subfigure}
+%	\end{subfigure}\hfill
+%	\begin{subfigure}{.3\textwidth}
+%		\centering
+%		\includegraphics[width=3cm,height=7cm]{example-image-b}
+%		\caption{this is the second subfigure}
+%	\end{subfigure}\hfill
+%	\begin{subfigure}{.3\textwidth}
+%		\centering
+%		\includegraphics[width=3cm,height=7cm]{example-image-c}
+%		\caption{this is the third subfigure}
+%	\end{subfigure}
+%	\caption{image}
+%\end{figure}
+
+% -------TABLE---------
+%\begin{table}[H]
+%	\centering
+%	\begin{tabular}{ |c|c|c|c| } 
+%		\hline
+%		$\alpha$ & $t$ & Stable distribution & Standard distribution \\ 
+%		\hline
+%		& 0 & 0.9193 & 1.0000\\ 
+%		0.5 & 3 & 0.2902 & 0.0027\\
+%		& 6 & 0.1975 & 0.0000\\
+%		\hline
+%		& 0 & 0.9998 & 1.0000\\
+%		1.5 & 3 & 0.1108 & 0.0027\\
+%		& 6 & 0.0316 & 0.0000\\
+%		\hline
+%	\end{tabular}
+%	\captionsetup{justification=centering,labelfont=it,textfont=it,margin=1cm}
+%	\caption{Tail probabilities for stable and standard Gaussian distributions}
+%\end{table}
+
+% --------VERTICAL SPACE-------
+%\vspace{1cm}
+
+% --------EQUATION-------
+%\begin{equation*}
+%p(y) = \frac{1}{a}p(x) = \frac{1}{a} {\cal N}(\frac{y-b}{a}|0,1)
+%\end{equation*}
+
+% --------CODE-------
+%\lstset{language=Matlab, breaklines=true, tabsize=2}
+%\begin{lstlisting}
+%
+%N = 1000;
+%y_mean = 1; % From distribution formula
+%cutoff = log(4)*y_mean + 1.5*log(3)*y_mean; % Tukey criteria
+%
+%\end{lstlisting}
+
+\end{document}
