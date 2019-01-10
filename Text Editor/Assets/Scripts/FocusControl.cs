@@ -6,13 +6,19 @@ using UnityEngine.Assertions;
 public class FocusControl : MonoBehaviour {
 
     GameObject focused_page;
+    LayerMask mask;
 
-	void Update ()
+    private void Start()
+    {
+        mask = LayerMask.GetMask("TextPlane");
+    }
+
+    void Update ()
     {
         RaycastHit hit;
         if (Physics.Raycast(transform.position, 
                             transform.TransformDirection(Vector3.forward), 
-                            out hit, Mathf.Infinity, ~0, QueryTriggerInteraction.Collide))
+                            out hit, Mathf.Infinity, mask, QueryTriggerInteraction.Collide))
         {
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * hit.distance, Color.yellow);
             if (focused_page == hit.transform.gameObject)

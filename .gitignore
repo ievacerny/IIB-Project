@@ -34,3 +34,12 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Private folder
+Private/
+
+# Latex and powerpoint temp files
+Reports/*/*~$*
+Reports/*/*.aux
+Reports/*/*.log
+Reports/*/*synctex.gz
