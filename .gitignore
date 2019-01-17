@@ -35,11 +35,14 @@ sysinfo.txt
 *.apk
 *.unitypackage
 
-# Private folder
+# Folders to ignore
 Private/
+Database/
 
 # Latex and powerpoint temp files
 Reports/*/*~$*
 Reports/*/*.aux
 Reports/*/*.log
 Reports/*/*synctex.gz
+Reports/*/*.bbl
+Reports/*/*.blg
