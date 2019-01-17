@@ -1,0 +1,210 @@
+#Presenter tests
+
+## Text cursor placement
+
+### 1 Single click event on a letter
+  - Move cursor over a letter
+  - Click left mouse button
+  - *Blinking text cursor should appear after the letter*
+
+### 2 Single click event after the text in line
+  - Move cursor over a white space after the text in the line
+  - Click left mouse button
+  - *Blinking text cursor should appear after the last letter on the same line*
+
+### 3 Single click event in an empty line after the text
+  - Move cursor to an empty line after the text
+  - Click left mouse button
+  - *Blinking text cursor should appear after the last character of the Text*
+
+### 4 Single click event before the first symbol
+  - Move cursor right before the text
+  - Click left mouse button
+  - *Blinking text cursor should appear before the first character*
+
+### 5 Single click event outside the page
+  - Move cursor outside of the page
+  - Click left mouse button
+  - *Cursor shouldn't appear*
+
+## Text selection drawing
+
+### 6 Select one letter in the middle of the text
+  - Move cursor over a letter in the middle of the text
+  - Click and hold left mouse button
+  - Move mouse one character away (either direction)
+  - Release mouse button
+  - *A character should be highlighted in blue*
+  - Press Shift+C on the keyboard
+  - Click left mouse button at the end of the text
+  - Press Shift+V on the keyboard
+  - *Only the character that was selected should appear*
+
+### 7 Select text over multiple lines
+  - Move cursor over the last word in one of the lines (except the last one)
+  - Click and hold left mouse button
+  - Move mouse to the first word of the next line
+  - Release mouse button
+  - *The highlight should extend from the selection point to the end of the
+    line and from the beginning of the next line to the end point*
+  - Press Shift+C on the keyboard
+  - Click left mouse button at the end of the text
+  - Press Enter and then Shift+V on the keyboard
+  - *The selected text should appear without the line break*
+
+### 8 Select text until very end
+  - Move cursor anywhere on the text
+  - Click and hold left mouse button
+  - Move mouse to the empty area below the text
+  - Release mouse button
+  - *The highlight should extend from the selection point to the end point*
+  - Press Shift+C on the keyboard
+  - Click left mouse button at the end of the text
+  - Press Enter and then Shift+V on the keyboard
+  - *The selected text should appear with its own line breaks without additional
+    white space at the end*
+
+### 9 Select text until very beginning
+  - Move cursor anywhere on the text
+  - Click and hold left mouse button
+  - Move mouse to the area above the first line of the text
+  - Release mouse button
+  - *The highlight should extend from the selection point to the first letter
+    of the text*
+  - Press Shift+C on the keyboard
+  - Click left mouse button at the end of the text
+  - Press Enter and then Shift+V on the keyboard
+  - *The selected text should appear with its own line breaks without additional
+    white space at the beginning*
+
+### 10 Select empty area without text
+  - Move cursor below to the empty area below the text
+  - Click and hold left mouse button
+  - Move mouse to a different point of the empty area below the text
+  - Release moues button
+  - *The highlight should extend from the selection point to the end point*
+  - Press Shift+C on the keyboard
+  - Click left mouse button at the end of the text
+  - Press Enter and then Shift+V on the keyboard
+  - *Nothing should happen*
+
+## Copy and Paste actions
+
+### 11 Copy text on the same line
+  - Select any part of the text that is on the same line
+  - Press Shift+C on the keyboard
+  - Go to the notepad application
+  - Press Ctrl+V on the keyboard
+  - *The selected text should appear*
+
+### 12 Copy text on the different lines
+  - Select any part of the text that spans multiple lines
+  - Press Shift+C on the keyboard
+  - Paste the text into the notepad application (Ctrl+V)
+  - *The selected text should appear without line breaks*
+
+### 13 Paste one word
+  - Copy one word from any other application with text (Ctrl+C)
+  - Run text editor component
+  - Click left mouse button at the end of the text
+  - Press Shift+V on the keyboard
+  - *The copied text should appear*
+
+### 14 Paste longer paragraph
+  - Copy longer paragraph from any other application with text (Ctrl+C)
+  - Run text editor component
+  - Click left mouse button at the end of the text
+  - Press Shift+V on the keyboard
+  - *The copied text should appear and have lines breaks to fit in the plane*
+
+### 15 Paste text with line breaks
+  - Copy text with line breaks from any other application (Ctrl+C)
+  - Run text editor component
+  - Click left mouse button at the end of the text
+  - Press Shift+V on the keyboard
+  - *The copied text should appear with the original line breaks and might
+    have more line breaks to fit within the plane*
+
+## Undo and Redo actions
+
+### 16 Undo one change
+  - Change something in the text (one action)
+  - Press Shift+Z on the keyboard
+  - *The change should disappear and the cursor should be at the end of the
+    text*
+
+### 17 Undo less than 10 changes
+  - Change something in the text 5 times
+  - Press Shift+Z on the keyboard 5 times
+  - *The text should go to the original state and the cursor should be at the
+    end of the text*
+
+### 18 Undo more than 10 changes
+  - Change something in the text 3 times
+  - Note what the text looks like
+  - Change something in the text 9 more times
+  - Press Shift+Z on the keyboard 12 times
+  - *The text should be as noted after the 3 changes and the cursor should be
+    at the end of the text*
+
+### 19 Redo one change
+  - Change something in the text and remember the change
+  - Change something in the text again
+  - Press Shift+Z on the keyboard
+  - *The change should disappear and the cursor should be at the end of the
+    text*
+  - Press Shift+Y on the keyboard
+  - *The text should be the same as it was after the first change and the
+    cursor is at the end of the text*
+
+### 20 Redo less than 10 changes
+  - Change something in the text 3 times
+  - Note what the text looks like
+  - Press Shift+Z on the keyboard 3 times
+  - *The text should go to the original state and the cursor should be at the
+    end of the text*
+  - Press Shift+Y on the keyboard 3 times
+  - *The text should be as noted after the 3 changes and the cursor should be
+    at the end of the text*
+
+### 21 Redo 10 changes
+  - Change something in the text 3 times
+  - Note what the text looks like
+  - Change something in the text 9 more times
+  - Note what the text looks like again
+  - Press Shift+Z on the keyboard 12 times
+  - *The text should be as noted after the 3 changes and the cursor should be
+    at the end of the text*
+  - Press Shift+Y on the keyboard 15 times
+  - *The text should be as noted after the 12 changes and the cursor should be
+    at the end of the text*
+
+## Selected text deletion
+
+### 22 Delete selected text
+  - Copy any piece of text from anywhere
+  - Select big part of one line of text
+  - Press backspace on the keyboard
+  - *The selected text should disappear and the cursor should be at the point
+    where the selected text was. Line wrapping should be done on the new
+    text nicely*
+  - Click left mouse button at the end of the text
+  - Press Shift+V on the keyboard
+  - *The text that appears should be the one that was copied and not the one
+    that was deleted*
+
+## Entering text
+
+### 23 Enter various characters
+  - Click left mouse button anywhere on the text
+  - Press random characters on the keyboard
+  - *Each character should appear in the text where after the location of the
+    cursor before the press*
+  - Press enter on the keyboard
+  - *Cursor and any text after the cursor should move to the new line*
+
+### 24 Deletion of characters
+  - Click left moues button anywhere on the text
+  - Press backspace on the keyboard
+  - *The cursor should move back one character and the character that was
+    before the cursor should disappear*
