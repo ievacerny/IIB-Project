@@ -1,0 +1,39 @@
+Modify plan?
+
+1. Do the app (done)
+
+2. Choose purely 3D gestures that I think are intuitive (maybe do a survey to ask which gestures are intuitive).
+Should be efficient, robust.
+
+3. Research best implementations and implement the 3D gestures
+
+4. Do the computational interaction optimisation / prediction
+
+4. Analyse gestures transferred from 2D (tap and hold for menu) using a model
+
+Don't worry about that - that's more phd project. Don't have time for that. Comparisons are validation
+
+5. Compare the gestures using confusion matrices and time taken
+
+
+Can I do SVM (most papers) to do recognition in real time or will it be a big constraint?
+One paper used decision-tree for real time recognition. One paper found that decision-tree is better than SVM
+Quick to predict, slow to training.
+
+Not enough data, SVM might be better.
+
+
+Gesture elicitation - google it. Related to intuitive (figure out what gestures people are thinking about).
+
+Do experiment with group of friends. Get a set of proposed gestures. Do model analysis on those gestures.
+
+Intuitive is not parameterised. Think of other words that can be parameterised ("")
+
+Technical milestone - report of presentation.
+
+Get a silly gesture and implement it. Build like a framework to work with multiple gestures. And write the report.
+
+Next term focus on design and model, functions and function carriers.
+
+Try to arrange a meeting with John to try out the hololens. ASk if I need to change the code to work with hololens.
+Or if that doesn't work, do Oculus.
