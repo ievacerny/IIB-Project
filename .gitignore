@@ -38,6 +38,7 @@ sysinfo.txt
 # Folders to ignore
 Private/
 Database/
+Papers/
 
 # Latex and powerpoint temp files
 Reports/*/*~$*
