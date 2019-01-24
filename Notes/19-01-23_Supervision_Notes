@@ -1,0 +1,20 @@
+User-defined gestures for surface compute - Wobbrock
+Agreement analysis toolkit (AGATe) - get gesture data into correct format.
+Using camera is also fine.
+
+Document the procedure of elicitation
+
+Do offline results first, only then think about integration.
+
+Motivate the gestures. Where does this come from, why are they good.
+What are they describing, determine which features are good and which are not
+(look at the weights) in offline analysis.
+
+Very important to motivate why the system is designed in a certain way.
+
+Don't think about the keyboard - not very important. Get the important project stuff going.
+
+fast diagrams (functional design) for editing. Think what the user needs to do, not the system
+
+Verification cross reference matrix. Every requirement maps to a verification method.
+Did it pass or not. Don't have to be able to test all of the requirements.
