@@ -47,3 +47,7 @@ Reports/*/*.log
 Reports/*/*synctex.gz
 Reports/*/*.bbl
 Reports/*/*.blg
+
+# Python
+**/__pycache__/
+**.pyc
