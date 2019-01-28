@@ -3,9 +3,13 @@ import numpy as np
 import tensorflow as tf
 import time
 import random
-from collections import Counter
+import matplotlib.pyplot as plt
 
-from prepare_inputs import calculate_temporal_features, load_LMDHG_from_file
+from prepare_inputs import (
+    calculate_temporal_features,
+    load_LMDHG_from_file,
+    load_DHG_dataset
+)
 
 
 def addNameToTensor(someTensor, theName):
@@ -13,14 +17,32 @@ def addNameToTensor(someTensor, theName):
     return tf.identity(someTensor, name=theName)
 
 
+# Save model
+export_dir = 'model_{}'.format(int(time.time()))
+builder = tf.saved_model.builder.SavedModelBuilder(export_dir)
+
+
 # Load training data
 start_time = time.time()
-training_data = []
-for i in range(1, 51):
-    training_data.append(load_LMDHG_from_file(i))
-print("Loaded training data in {} seconds".format(time.time() - start_time))
-print(len(training_data))
 
+# LMDHG
+# all_gestures = []
+# all_labels = []
+# for i in range(1, 51):
+#     new_gestures, new_labels = load_LMDHG_from_file(i)
+#     all_gestures.append(new_gestures)
+#     all_labels.append(new_labels)
+# all_gestures = np.concatenate(all_gestures)
+# all_labels = np.concatenate(all_labels)
+# training_data_len = int(0.9 * len(all_gestures))
+
+# DHG
+all_gestures, all_labels = load_DHG_dataset()
+training_data_len = len(all_gestures)-1
+
+print("Loaded training data in {} seconds".format(time.time() - start_time))
+
+# LMDHG label dictionary
 label_dict = {
     "REPOS": 0,  # NAG
     "POINTER": 1,  # Point to
@@ -42,13 +64,15 @@ label_dict = {
 
 # Define parameters
 window_size = 400  # the actual size will be window_size/frame_step
-frame_step = 10
-batch_size = 5
+frame_step = 1
+batch_size = 3
 learning_rate = 0.001
-training_iters = 1000
-display_step = 20
+training_iters = 100
+display_step = 10
 n_input = 228
-n_output = len(label_dict)
+# n_output = len(label_dict)  # LMDHG n_output
+n_output = max(all_labels)+1  # DHG n_output
+print(n_output)
 # number of units in RNN cell
 # (dimensionality of the hidden and the output states)
 n_hidden = 512
@@ -83,14 +107,43 @@ def LSTM(x, weights, biases):
 
 
 def get_training_data():
-    """Get the input and label arrays for one sample."""
-    # Generate a minibatch. Add some randomness on selection process.
-    file_no = random.randint(0, 49)
-    coords, labels = training_data[file_no]
-    offset = random.randint(0, len(coords)-window_size-1)
+    """Get the input and label arrays for one training sample."""
+    gesture_no = random.randint(0, training_data_len)
 
     # Generate input vector of dimension [1, n_input]
-    frames = coords[offset:offset+window_size:frame_step]
+    frames = all_gestures[gesture_no]
+    while len(frames) < 4:
+        gesture_no = random.randint(0, training_data_len)
+        frames = all_gestures[gesture_no][::frame_step]
+    with np.errstate(divide='ignore', invalid='ignore'):
+        # print(len(frames), gesture_no, all_labels[gesture_no])
+        features = calculate_temporal_features(frames)
+    if len(features[0]) != n_input:
+        raise Exception("Input dimension doesn't match {}"
+                        .format(len(features[0])))
+
+    # Build labels
+    actual_label = all_labels[gesture_no]
+    onehot_label = np.zeros(n_output, dtype=float)
+    # onehot_label[label_dict[actual_label]] = 1.0
+    onehot_label[actual_label] = 1.0
+    onehot_label = np.reshape(onehot_label, [-1, n_output])
+
+    return features, onehot_label
+
+
+def get_test_data():
+    """Get the input and actual label number for one test sample."""
+    # gesture_no = random.randint(training_data_len+1, len(all_gestures)-1)
+    # DHG gestures are not mixed. Can't as easily separate training and testing
+    gesture_no = random.randint(0, training_data_len)
+
+    # Generate input vector of dimension [1, n_input]
+    frames = all_gestures[gesture_no][::frame_step]
+    while len(frames) < 4:
+        # gesture_no = random.randint(training_data_len+1, len(all_gestures)-1)
+        gesture_no = random.randint(0, training_data_len)
+        frames = all_gestures[gesture_no][::frame_step]
     with np.errstate(divide='ignore', invalid='ignore'):
         features = calculate_temporal_features(frames)
     if len(features[0]) != n_input:
@@ -98,16 +151,10 @@ def get_training_data():
                         .format(len(features[0])))
 
     # Build labels
-    # frame_labels = labels[offset:offset+window_size:frame_step]
-    # Could do probability based on frequency
-    # actual_label = Counter(frame_labels).most_common(1)[0][0]
-    actual_label = labels[offset+window_size-1]
-    onehot_label = np.zeros(n_output, dtype=float)
-    # FIXME add back the brackets?
-    onehot_label[label_dict[actual_label]] = 1.0
-    onehot_label = np.reshape(onehot_label, [-1, n_output])
+    # actual_label = label_dict[all_labels[gesture_no]]  # LMDHG
+    actual_label = all_labels[gesture_no]  # DHG
 
-    return features, onehot_label
+    return features, actual_label
 
 
 pred = LSTM(x, weights, biases)
@@ -116,7 +163,7 @@ addNameToTensor(pred, "myOutput")
 # Loss and optimizer
 cost = tf.reduce_mean(
     tf.nn.softmax_cross_entropy_with_logits_v2(logits=pred, labels=y))
-optimizer = tf.train.RMSPropOptimizer(
+optimizer = tf.train.AdamOptimizer(
     learning_rate=learning_rate).minimize(cost)
 
 # Model evaluation
@@ -128,12 +175,10 @@ init = tf.global_variables_initializer()
 start_time = time.time()
 
 # Launch the graph
+loss_plot = np.zeros(training_iters)
 with tf.Session() as session:
     session.run(init)
     step = 0
-    file_no = random.randint(0, 49)
-    coords, labels = training_data[file_no]
-    offset = random.randint(0, len(coords)-window_size-1)
     # Reporting variables
     acc_total = 0
     loss_total = 0
@@ -151,36 +196,48 @@ with tf.Session() as session:
             feed_dict={x: input_batch, y: output_batch})
 
         # Code for reporting
+        loss_plot[step] = loss
         loss_total += loss
         acc_total += acc
         if (step+1) % display_step == 0:
             print("Iter= " + str(step+1) +
                   ", Average Loss in {} steps= ".format(display_step) +
-                  "{:.6f}".format(loss_total/step) +
+                  "{:.6f}".format(loss_total/display_step) +
                   ", Average Accuracy in {} steps= ".format(display_step) +
-                  "{:.2f}%".format(100*acc_total/step))
-            last_onehot_pred = session.run(
-                pred, feed_dict={x: input_batch[-1:, :, :]})
-            actual_label = np.argmax(output_batch[-1, :])
-            onehot_label_pred = int(tf.argmax(last_onehot_pred, 1).eval())
+                  "{:.2f}%".format(100*acc_total/display_step))
+            actual_label = np.argmax(output_batch[:, :], axis=1)
+            onehot_label_pred = tf.argmax(onehot_pred, 1).eval()
             print("[%s] predicted vs [%s]" %
                   (onehot_label_pred, actual_label))
+            loss_total = 0
+            acc_total = 0
 
         step += 1
-        # offset += random.randint(0, window_size)
 
     print("Optimization Finished!")
     print("Elapsed time: ", time.time() - start_time)
 
+    signature = tf.saved_model.predict_signature_def(
+        inputs={'myInput': x},
+        outputs={'myOutput': pred})
+    # using custom tag instead of: tags=[tag_constants.SERVING]
+    builder.add_meta_graph_and_variables(
+        sess=session,
+        tags=["myTag"],
+        signature_def_map={'predict': signature})
+    builder.save()
+
     # Test
-    coords, labels = training_data[8]
-    frames = coords[7000:7000+window_size:frame_step]
-    with np.errstate(divide='ignore', invalid='ignore'):
-        features = calculate_temporal_features(frames)
-    if len(features[0]) != n_input:
-        raise Exception("Input dimension doesn't match {}"
-                        .format(len(features[0])))
-    onehot_pred = session.run(pred, feed_dict={x: features})
-    print(onehot_pred)
-    onehot_label_pred = int(tf.argmax(onehot_pred, 1).eval())
-    print(onehot_label_pred)
+    for t in range(10):
+        features, actual_label = get_test_data()
+        onehot_pred = session.run(pred, feed_dict={x: features})
+        print(onehot_pred)
+        onehot_label_pred = int(tf.argmax(onehot_pred, 1).eval())
+        print("[%s] predicted vs [%s]" %
+              (onehot_label_pred, actual_label))
+
+    plt.plot(np.arange(0, len(loss_plot)), loss_plot)
+    plt.ylim(bottom=0)
+    plt.ylabel("Loss")
+    plt.xlabel("Iteration")
+    plt.show()

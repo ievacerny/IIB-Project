@@ -2,7 +2,7 @@
 import numpy as np
 import scipy.io as sio
 from os.path import join as pjoin
-import time
+# import time
 
 
 def load_LMDHG_from_file(file_no, data_folder=None):
@@ -13,23 +13,72 @@ def load_LMDHG_from_file(file_no, data_folder=None):
     data = sio.loadmat(pjoin(data_folder, "DataFile{}.mat".format(file_no)),
                        squeeze_me=True)
 
-    coords = data["skeleton"]
-    labels = np.empty(len(coords), dtype="object")
+    labels = np.array(data['labels'], dtype="object")
+    gestures = np.empty(len(data['Anotations']), dtype="object")
 
     idx = 0
     for first, last in data['Anotations']:
-        labels[first-1:last] = data['labels'][idx]
+        gestures[idx] = data["skeleton"][first-1:last]
         idx += 1
 
-    return coords, labels
+    gidx = labels != "REPOS"
+    gestures = gestures[gidx]
+    labels = labels[gidx]
+    return gestures, labels
 
 
-coords, labels = load_LMDHG_from_file(1)
-# The gestures are quite long, take only every 10th frame
-coords = coords[::10]
-labels = labels[::10]
+def load_DHG_dataset(no_instances=None, data_folder=None):
+    """Load coordinates and labels of all DHG dataset."""
+    if data_folder is None:
+        data_folder = pjoin("..", "Database", "DHG2016")
 
-points_of_interest = [0, 1, 6, 10, 14, 18, 22, 23, 24, 29, 33, 37, 41, 45]
+    gestures = []
+    labels = []
+    idx = 0
+    with open(pjoin(data_folder, "informations_troncage_sequences.txt")) as f:
+        for line in f:
+            g, f, s, e, beg, end = line.split()
+            beg, end = int(beg), int(end)
+            gesture_fname = pjoin(
+                data_folder,
+                "gesture_{}".format(g),
+                "finger_{}".format(f),
+                "subject_{}".format(s),
+                "essai_{}".format(e),
+                "skeleton_world.txt"
+            )
+            with open(gesture_fname) as fg:
+                frames = np.empty(end+100, dtype='object')
+                frame_id = 0
+                for frame in fg:
+                    points = frame.split()
+                    points = np.array(points, dtype='float32')
+                    frames[frame_id] = np.reshape(points, [-1, 3])
+                    frame_id += 1
+                # Cut non action frames
+                frames = frames[beg-1:end]
+            gestures.append(frames)
+            labels.append(int(g)-1)
+            idx += 1
+            if no_instances is not None and idx == no_instances:
+                break
+
+    gestures = np.array(gestures)
+    labels = np.array(labels)
+    return gestures, labels
+
+
+# g, l = load_DHG_dataset(20)
+# coords, labels = load_LMDHG_from_file(1)
+# # The gestures are quite long, take only every 10th frame
+# coords = coords[::10]
+# labels = labels[::10]
+
+# LMDHG
+# points_of_interest = [0, 1, 6, 10, 14, 18, 22, 23, 24, 29, 33, 37, 41, 45]
+# DHG
+# points_of_interest = [0, 1, 5, 9, 13, 17, 21]
+points_of_interest = np.arange(0, 22)
 
 
 def calculate_features(frames):
@@ -37,7 +86,7 @@ def calculate_features(frames):
     length = len(frames)
     features = np.zeros(57)
     frames = np.stack(frames)
-    if frames.shape != (length, 46, 3):
+    if frames.shape != (length, 46, 3) and frames.shape != (length, 22, 3):
         raise Exception("The frames extracted are not in correct shape: {}".
                         format(frames.shape))
     frames = frames[:, points_of_interest, :]
@@ -190,7 +239,7 @@ def calculate_temporal_features(windowed_frames):
     return tmp_features
 
 
-now = time.time()
-with np.errstate(divide='ignore', invalid='ignore'):
-    test = calculate_temporal_features(coords[:40])
+# now = time.time()
+# with np.errstate(divide='ignore', invalid='ignore'):
+#     test = calculate_temporal_features(coords[:40])
 # print(time.time() - now)
