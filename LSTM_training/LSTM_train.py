@@ -6,8 +6,8 @@ import random
 import matplotlib.pyplot as plt
 
 from prepare_inputs import (
-    calculate_temporal_features,
-    load_LMDHG_from_file,
+    calculate_features,
+    # load_LMDHG_from_file,
     load_DHG_dataset
 )
 
@@ -36,54 +36,63 @@ start_time = time.time()
 # all_labels = np.concatenate(all_labels)
 # training_data_len = int(0.9 * len(all_gestures))
 
+random.seed(10)
+np.random.seed(10)
 # DHG
 all_gestures, all_labels = load_DHG_dataset()
-training_data_len = len(all_gestures)-1
-
+indices = np.arange(len(all_gestures))
+np.random.shuffle(indices)
+training_data = (
+    all_gestures[indices[:int(0.8*len(all_gestures))]],
+    all_labels[indices[:int(0.8*len(all_gestures))]]
+)
+testing_data = (
+    all_gestures[indices[int(0.8*len(all_gestures)):]],
+    all_labels[indices[int(0.8*len(all_gestures)):]]
+)
 print("Loaded training data in {} seconds".format(time.time() - start_time))
+training_data_len = len(all_gestures) - 1
 
-# LMDHG label dictionary
-label_dict = {
-    "REPOS": 0,  # NAG
-    "POINTER": 1,  # Point to
-    "POINTER_PROLONGE": 1,  # "Point extended"???
-    "ATTRAPER": 2,  # Catch
-    "SECOUER_POING_LEVE": 3,  # Shake with 2 hands
-    "ATTRAPER_MAIN_LEVEE": 4,  # Catch with 2 hands
-    "SECOUER_BAS": 5,  # Shake down
-    "SECOUER": 6,  # Shake
-    "C": 7,  # Draw C
-    "POINTER_MAIN_LEVEE": 8,  # Point to with 2 hands
-    "ZOOM": 9,  # Zoom
-    "DEFILER_DOIGT": 10,  # Scroll
-    "LIGNE": 11,  # Draw line
-    "TRANCHER": 12,  # Slice
-    "PIVOTER": 13,  # Rotate
-    "CISEAUX": 12,  # scissors?????
-}
+# # LMDHG label dictionary
+# label_dict = {
+#     "REPOS": 0,  # NAG
+#     "POINTER": 1,  # Point to
+#     "POINTER_PROLONGE": 1,  # "Point extended"???
+#     "ATTRAPER": 2,  # Catch
+#     "SECOUER_POING_LEVE": 3,  # Shake with 2 hands
+#     "ATTRAPER_MAIN_LEVEE": 4,  # Catch with 2 hands
+#     "SECOUER_BAS": 5,  # Shake down
+#     "SECOUER": 6,  # Shake
+#     "C": 7,  # Draw C
+#     "POINTER_MAIN_LEVEE": 8,  # Point to with 2 hands
+#     "ZOOM": 9,  # Zoom
+#     "DEFILER_DOIGT": 10,  # Scroll
+#     "LIGNE": 11,  # Draw line
+#     "TRANCHER": 12,  # Slice
+#     "PIVOTER": 13,  # Rotate
+#     "CISEAUX": 12,  # scissors?????
+# }
 
-# Define parameters
-window_size = 400  # the actual size will be window_size/frame_step
-frame_step = 1
-batch_size = 3
-learning_rate = 0.001
-training_iters = 100
-display_step = 10
-n_input = 228
+# Network parameters
+frame_step = 1  # Used to change the frame rate of the input
+batch_size = 5
+learning_rate = 0.0005
+training_iters = 10000
+display_step = 250
+testing_iters = 50
+# Dimensionality parameters
+n_frames = 80
+n_dimension = 24
 # n_output = len(label_dict)  # LMDHG n_output
 n_output = max(all_labels)+1  # DHG n_output
-print(n_output)
-# number of units in RNN cell
-# (dimensionality of the hidden and the output states)
-n_hidden = 512
-random.seed(10)
+n_hidden = 512  # Dimension of the hidden state
 
 # tf Graph input
 """(sample, time_steps, features) represents the tensor you will feed into LSTM
 sample: size of your minibatch: How many examples you give at once
 time_steps: length of a sequence
 features: dimension of each element of the time-series."""
-x = tf.placeholder("float", [None, n_input, 1], name="myInput")
+x = tf.placeholder("float", [None, n_frames, n_dimension], name="myInput")
 """(sample, number_of_categories)"""
 y = tf.placeholder("float", [None, n_output])
 
@@ -94,10 +103,11 @@ biases = {'out': tf.Variable(tf.random_normal([n_output]))}
 
 def LSTM(x, weights, biases):
     """Define the network."""
-    x = tf.reshape(x, [-1, n_input])
+    x = tf.reshape(x, [-1, n_frames * n_dimension])
+    # print(x.shape)
     # Generate a n_input-element sequence of inputs
     # (eg. [had] [a] [general] -> [20] [6] [33])
-    x = tf.split(x, n_input, 1)
+    x = tf.split(x, n_frames, 1)
     LSTM_cell = tf.nn.rnn_cell.LSTMCell(n_hidden)
     # outputs is a list of outputs for each input
     # state is the final state
@@ -108,53 +118,62 @@ def LSTM(x, weights, biases):
 
 def get_training_data():
     """Get the input and label arrays for one training sample."""
-    gesture_no = random.randint(0, training_data_len)
+    gesture_no = random.randint(0, len(training_data[0])-1)
 
-    # Generate input vector of dimension [1, n_input]
-    frames = all_gestures[gesture_no]
-    while len(frames) < 4:
-        gesture_no = random.randint(0, training_data_len)
-        frames = all_gestures[gesture_no][::frame_step]
+    padded_features = np.zeros((n_frames, n_dimension))
+    frames = training_data[0][gesture_no][::frame_step]
+    features = []
+    while len(frames) < 1:
+        gesture_no = random.randint(0, len(training_data[0])-1)
+        frames = training_data[0][gesture_no][::frame_step]
     with np.errstate(divide='ignore', invalid='ignore'):
-        # print(len(frames), gesture_no, all_labels[gesture_no])
-        features = calculate_temporal_features(frames)
-    if len(features[0]) != n_input:
-        raise Exception("Input dimension doesn't match {}"
-                        .format(len(features[0])))
+        for frame in frames:
+            features.append(calculate_features(frame))
+    if len(frames) >= n_frames:
+        padded_features = np.array(features[:n_frames])
+    else:
+        padded_features[-len(features):, :] = features
 
     # Build labels
-    actual_label = all_labels[gesture_no]
+    actual_label = training_data[1][gesture_no]
     onehot_label = np.zeros(n_output, dtype=float)
     # onehot_label[label_dict[actual_label]] = 1.0
     onehot_label[actual_label] = 1.0
     onehot_label = np.reshape(onehot_label, [-1, n_output])
 
-    return features, onehot_label
+    return padded_features, onehot_label
 
 
 def get_test_data():
     """Get the input and actual label number for one test sample."""
     # gesture_no = random.randint(training_data_len+1, len(all_gestures)-1)
     # DHG gestures are not mixed. Can't as easily separate training and testing
-    gesture_no = random.randint(0, training_data_len)
+    gesture_no = random.randint(0, len(testing_data[0])-1)
 
-    # Generate input vector of dimension [1, n_input]
-    frames = all_gestures[gesture_no][::frame_step]
-    while len(frames) < 4:
-        # gesture_no = random.randint(training_data_len+1, len(all_gestures)-1)
-        gesture_no = random.randint(0, training_data_len)
-        frames = all_gestures[gesture_no][::frame_step]
+    padded_features = np.zeros((n_frames, n_dimension))
+    frames = testing_data[0][gesture_no][::frame_step]
+    features = []
+    while len(frames) < 1:
+        gesture_no = random.randint(0, len(testing_data[0])-1)
+        frames = testing_data[0][gesture_no][::frame_step]
     with np.errstate(divide='ignore', invalid='ignore'):
-        features = calculate_temporal_features(frames)
-    if len(features[0]) != n_input:
-        raise Exception("Input dimension doesn't match {}"
-                        .format(len(features[0])))
+        for frame in frames:
+            features.append(calculate_features(frame))
+    if len(frames) >= n_frames:
+        padded_features = np.array(features[:n_frames])
+    else:
+        padded_features[-len(features):, :] = features
+    padded_features = np.reshape(padded_features, [-1, n_frames, n_dimension])
 
     # Build labels
     # actual_label = label_dict[all_labels[gesture_no]]  # LMDHG
-    actual_label = all_labels[gesture_no]  # DHG
+    actual_label = testing_data[1][gesture_no]  # DHG
+    onehot_label = np.zeros(n_output, dtype=float)
+    # onehot_label[label_dict[actual_label]] = 1.0
+    onehot_label[actual_label] = 1.0
+    onehot_label = np.reshape(onehot_label, [-1, n_output])
 
-    return features, actual_label
+    return padded_features, onehot_label
 
 
 pred = LSTM(x, weights, biases)
@@ -182,10 +201,12 @@ with tf.Session() as session:
     # Reporting variables
     acc_total = 0
     loss_total = 0
+    accuracy_graph_train = []
+    accuracy_graph_test = []
 
     while step < training_iters:
 
-        input_batch = np.zeros((batch_size, n_input, 1))
+        input_batch = np.zeros((batch_size, n_frames, n_dimension))
         output_batch = np.zeros((batch_size, n_output))
         for i in range(batch_size):
             input_batch[i, :, :], output_batch[i, :] = get_training_data()
@@ -195,7 +216,7 @@ with tf.Session() as session:
             [optimizer, accuracy, cost, pred],
             feed_dict={x: input_batch, y: output_batch})
 
-        # Code for reporting
+        # Code for reporting (actually it's like epoch)
         loss_plot[step] = loss
         loss_total += loss
         acc_total += acc
@@ -209,6 +230,18 @@ with tf.Session() as session:
             onehot_label_pred = tf.argmax(onehot_pred, 1).eval()
             print("[%s] predicted vs [%s]" %
                   (onehot_label_pred, actual_label))
+            accuracy_graph_train.append(acc_total/display_step)
+            # Do some validation after this epoch
+            accuracy_testing = 0
+            for t in range(testing_iters):
+                features, onehot_label = get_test_data()
+                onehot_pred, acc = session.run(
+                    [pred, accuracy],
+                    feed_dict={x: features, y: onehot_label})
+                accuracy_testing += acc
+            print("Validation accuracy: {}".format(
+                accuracy_testing/testing_iters))
+            accuracy_graph_test.append(accuracy_testing/testing_iters)
             loss_total = 0
             acc_total = 0
 
@@ -227,17 +260,37 @@ with tf.Session() as session:
         signature_def_map={'predict': signature})
     builder.save()
 
-    # Test
-    for t in range(10):
-        features, actual_label = get_test_data()
-        onehot_pred = session.run(pred, feed_dict={x: features})
-        print(onehot_pred)
-        onehot_label_pred = int(tf.argmax(onehot_pred, 1).eval())
-        print("[%s] predicted vs [%s]" %
-              (onehot_label_pred, actual_label))
+    # # Test
+    # accuracy_testing = 0
+    # accuracy_graph_test = []
+    # for t in range(testing_iters):
+    #     features, onehot_label = get_test_data()
+    #     onehot_pred, acc = session.run(
+    #         [pred, accuracy],
+    #         feed_dict={x: features, y: onehot_label})
+    #     accuracy_testing += acc
+    #     accuracy_graph_test.append(accuracy_testing/t)
+    #     if (t+1) % display_step == 0:
+    #         print(tf.nn.softmax(onehot_pred).eval())
+    #         actual_label = np.argmax(onehot_label)
+    #         onehot_label_pred = int(tf.argmax(onehot_pred, 1).eval())
+    #         print("[%s] predicted vs [%s]" %
+    #               (onehot_label_pred, actual_label))
+    # print("Average accuracy: {}".format(accuracy_testing/testing_iters))
 
+    plt.figure()
     plt.plot(np.arange(0, len(loss_plot)), loss_plot)
-    plt.ylim(bottom=0)
+    plt.ylim([0, 5])
     plt.ylabel("Loss")
     plt.xlabel("Iteration")
+    plt.show()
+    plt.plot(np.arange(0, len(accuracy_graph_test)), accuracy_graph_test,
+             label="Test")
+    plt.plot(np.arange(0, len(accuracy_graph_train)), accuracy_graph_train,
+             label="Train")
+    plt.xlim([0, max(len(accuracy_graph_test), len(accuracy_graph_train))])
+    plt.ylim([0, 1])
+    plt.ylabel("Accuracy")
+    plt.xlabel("Epoch")
+    plt.gca().legend()
     plt.show()

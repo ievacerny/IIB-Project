@@ -2,7 +2,13 @@
 import numpy as np
 import scipy.io as sio
 from os.path import join as pjoin
-# import time
+import matplotlib.pyplot as plt
+
+# LMDHG
+# points_of_interest = [0, 1, 6, 10, 14, 18, 22, 23, 24, 29, 33, 37, 41, 45]
+# DHG
+# points_of_interest = [0, 1, 5, 9, 13, 17, 21]
+points_of_interest = np.arange(0, 22)
 
 
 def load_LMDHG_from_file(file_no, data_folder=None):
@@ -27,7 +33,7 @@ def load_LMDHG_from_file(file_no, data_folder=None):
     return gestures, labels
 
 
-def load_DHG_dataset(no_instances=None, data_folder=None):
+def load_DHG_dataset(no_instances=None, data_folder=None, frame_length=150):
     """Load coordinates and labels of all DHG dataset."""
     if data_folder is None:
         data_folder = pjoin("..", "Database", "DHG2016")
@@ -35,10 +41,12 @@ def load_DHG_dataset(no_instances=None, data_folder=None):
     gestures = []
     labels = []
     idx = 0
+    lengths = []
     with open(pjoin(data_folder, "informations_troncage_sequences.txt")) as f:
         for line in f:
             g, f, s, e, beg, end = line.split()
             beg, end = int(beg), int(end)
+            lengths.append(end-beg)
             gesture_fname = pjoin(
                 data_folder,
                 "gesture_{}".format(g),
@@ -65,6 +73,9 @@ def load_DHG_dataset(no_instances=None, data_folder=None):
 
     gestures = np.array(gestures)
     labels = np.array(labels)
+    # plt.hist(lengths)
+    # plt.show()
+    print(min(lengths), max(lengths))
     return gestures, labels
 
 
@@ -74,23 +85,37 @@ def load_DHG_dataset(no_instances=None, data_folder=None):
 # coords = coords[::10]
 # labels = labels[::10]
 
-# LMDHG
-# points_of_interest = [0, 1, 6, 10, 14, 18, 22, 23, 24, 29, 33, 37, 41, 45]
-# DHG
-# points_of_interest = [0, 1, 5, 9, 13, 17, 21]
-points_of_interest = np.arange(0, 22)
+
+def calculate_features(points):
+    """Obtain features from one frame."""
+    C = points[1, :]  # central point - the palm
+    wrist_vec = points[0, :] - C
+    wrist_mag = np.sqrt(abs(wrist_vec.dot(wrist_vec)))
+    fingers_vec = points[[5, 9, 13, 17, 21], :] - C
+    fingers_mag = np.linalg.norm(fingers_vec, axis=1)
+
+    features = np.zeros(24)
+
+    features[:15] = fingers_vec.flatten()
+
+    idx1 = 15
+    idx2 = 19
+    for i in range(len(fingers_vec)):
+        finger = fingers_vec[i]
+        if wrist_mag != 0 and fingers_mag[i] != 0:  # Else leave as zero
+            features[idx1] = np.arccos(np.dot(finger, wrist_vec) /
+                                       (fingers_mag[i] * wrist_mag))
+        if i != 0 and fingers_mag[i]*fingers_mag[i-1] != 0:
+            features[idx2] = np.arccos(np.dot(finger, fingers_vec[i-1]) /
+                                       (fingers_mag[i] * fingers_mag[i-1]))
+        idx1 += 1
+        idx2 += 1
+    return features
 
 
-def calculate_features(frames):
+def calculate_old_features(pattern):
     """Obtain features from a set of frames."""
-    length = len(frames)
     features = np.zeros(57)
-    frames = np.stack(frames)
-    if frames.shape != (length, 46, 3) and frames.shape != (length, 22, 3):
-        raise Exception("The frames extracted are not in correct shape: {}".
-                        format(frames.shape))
-    frames = frames[:, points_of_interest, :]
-    pattern = np.concatenate(np.stack(frames, axis=1), axis=0)
 
     last_idx = len(pattern) - 1
     box = np.array([
@@ -224,22 +249,3 @@ def phi_angles(pattern, k):
         # Currently cannot tell if angle is positive or negative (+-180)
         angles[i-k] = np.arccos(normal_dot)
     return angles
-
-
-def calculate_temporal_features(windowed_frames):
-    """Calculate features using 2 level temporal pyramid."""
-    l1_size = len(windowed_frames)
-    l2_size = int(l1_size/4)
-    tmp1 = calculate_features(windowed_frames)
-    tmp21 = calculate_features(windowed_frames[:2*l2_size])
-    tmp22 = calculate_features(windowed_frames[l2_size:3*l2_size])
-    tmp23 = calculate_features(windowed_frames[2*l2_size:])
-    tmp_features = np.concatenate((tmp1, tmp21, tmp22, tmp23))
-    tmp_features = np.reshape(tmp_features, [-1, len(tmp_features), 1])
-    return tmp_features
-
-
-# now = time.time()
-# with np.errstate(divide='ignore', invalid='ignore'):
-#     test = calculate_temporal_features(coords[:40])
-# print(time.time() - now)
