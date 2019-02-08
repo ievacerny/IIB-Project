@@ -1,36 +1,28 @@
 -------------------- PREPARATION -------------------------
 The study will involve 20 people, just like [1].
 
-      Name           Age             Experience with gestures
- 1. Stephen C.        21             Y      +
- 2. Monica D.         21             Y      +
- 3. Aurimas S.        21             Y      +
- 4. Paulius A.        22             Y      +
- 5. Egle A.           19             Y/N    ??
- 6. Raphael           24             Y      +
- 7. Erikas A.         12             Y/N
- 8. Enrikas A.        53             N
- 9. Valda A.          54?            N
-10. Edita C.          55             N      +
-11. Mykolas C.        71             N      +
-12. Janina A.         78             N
-13. Meile B.          58             N      +
-14. Jamie K.          23             Y/N    ??
-15. Jin P.            29             Y
-16. Christian T.      23             Y/N    +
-17. Tomas D.          22             Y/N    ??
-18. Reo S.            21             Y/N    +
-19. Alina B.          22             N      +
-20. Enrika N.         22             Y/N    ??
-21. Lukas B.          23             Y      +
---- Backup
-22. Shane M.          23             Y/N
-23. Andy M.           40?            Y
-24. Peter A.          30?            Y/N
-25. Daria A.          30?            Y/N
-26. Fin               21             Y/N
-27. Nathan            21             Y
-28. Clinton           21             Y
+    Name              Age
+
+ 1. Monica D.         21    ++++
+ 2. Jin P.            31    ++++
+ 3. Stephen C.        21    ++++
+ 4. Thomas            21    ++++
+ 5. Aurimas S.        21    ++++
+ 6. Reo S.            21    ++++
+ 7. Mykolas C.        71    ++++
+ 8. Janina A.         78    ++++
+ 9. Erikas A.         12    ++++
+10. Enrikas A.        53    ++++
+11. Valda A.          54    ++++
+12. Edita C.          55    ++++
+13. Alina B.          22    ++++
+14. Enrika N.         22    ++++
+15. Raphael           24    ++++
+16. Egle A.           19    ++++
+17. Christian T.      23    ++++
+18. Tomas D.          22    ++++
+19. Jamie K.          23    ++++
+20. Lukas B.          23    ++++
 
 Ask people which hand is their dominant hand - choose only right handed people.
 
