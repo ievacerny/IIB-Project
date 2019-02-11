@@ -1,0 +1,12 @@
+- Found a paper that did gesture elicitation for AR and came up with same/similar gestures for 3/5 tasks. How should I address it? One thing that was different is that they allowed the use of multiple hands.
+That's fine, just compare the gestures. Mark Billinghurst
+
+- How to use the labels for the gestures in training? Should the gesture label appear from the very first frame?
+Do majority decision. Don't want too wide window because it will drown a short gesture.
+
+
+- How should I deal with gestures that have significantly different duration? 7 frames vs 100 frames?
+Choose a window size that is a tradeoff. If window is small and gesture is short, if you've seen gesture 3 for multiple windows - all good. Start with 2 gestures. Downsampling could be useful.
+
+
+False positives are important. They should have higher weighting. Other is recognition rate, ergonomics, guessibility. Weights come from my own professional judgement. Xs are given by the data. Rank gestures in scale 1 to 5. Huge error bars, weights are made up, but this gives a form of discussion. Show mapping function from accuracy rates to 1 to 5. Numbers make for a better argument. Estimate user's effort. And then use linear combination. Have as many attributes as possible (if they remembered as well) and if necessary, have low weighting. Row is command, column is a candidate gesture. Instead of solutions have gestures. Sub-command - actions. Then have weighting (grass cutter). Do weighting first for every single gesture, before filling in the table. Concept1 1 is "gesture 1 for copy". Ideal is the max value possible, the ceiling. The table is the gesture space. This is to force me to explore. At least 3 candidates for every command. 20 repetitions for every gesture. Has to be the same environment. 
