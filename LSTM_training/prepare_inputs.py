@@ -2,13 +2,27 @@
 import numpy as np
 import scipy.io as sio
 from os.path import join as pjoin
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-# LMDHG
-# points_of_interest = [0, 1, 6, 10, 14, 18, 22, 23, 24, 29, 33, 37, 41, 45]
-# DHG
-# points_of_interest = [0, 1, 5, 9, 13, 17, 21]
-points_of_interest = np.arange(0, 22)
+
+label_dict = {
+    "REPOS": 0,  # NAG
+    "POINTER": 1,  # Point to
+    "POINTER_PROLONGE": 1,  # "Point extended"???
+    "ATTRAPER": 2,  # Catch
+    "SECOUER_POING_LEVE": 3,  # Shake with 2 hands
+    "ATTRAPER_MAIN_LEVEE": 4,  # Catch with 2 hands
+    "SECOUER_BAS": 5,  # Shake down
+    "SECOUER": 6,  # Shake
+    "C": 7,  # Draw C
+    "POINTER_MAIN_LEVEE": 8,  # Point to with 2 hands
+    "ZOOM": 9,  # Zoom
+    "DEFILER_DOIGT": 10,  # Scroll
+    "LIGNE": 11,  # Draw line
+    "TRANCHER": 12,  # Slice
+    "PIVOTER": 13,  # Rotate
+    "CISEAUX": 12,  # scissors?????
+}
 
 
 def load_LMDHG_from_file(file_no, data_folder=None):
@@ -19,17 +33,14 @@ def load_LMDHG_from_file(file_no, data_folder=None):
     data = sio.loadmat(pjoin(data_folder, "DataFile{}.mat".format(file_no)),
                        squeeze_me=True)
 
-    labels = np.array(data['labels'], dtype="object")
-    gestures = np.empty(len(data['Anotations']), dtype="object")
+    gestures = np.array(data['skeleton'], dtype="object")
+    labels = np.empty(len(data['skeleton']), dtype="object")
 
     idx = 0
     for first, last in data['Anotations']:
-        gestures[idx] = data["skeleton"][first-1:last]
+        labels[first-1:last] = label_dict[data['labels'][idx]]
         idx += 1
 
-    gidx = labels != "REPOS"
-    gestures = gestures[gidx]
-    labels = labels[gidx]
     return gestures, labels
 
 
@@ -79,19 +90,13 @@ def load_DHG_dataset(no_instances=None, data_folder=None, frame_length=150):
     return gestures, labels
 
 
-# g, l = load_DHG_dataset(20)
-# coords, labels = load_LMDHG_from_file(1)
-# # The gestures are quite long, take only every 10th frame
-# coords = coords[::10]
-# labels = labels[::10]
-
-
 def calculate_features(points):
     """Obtain features from one frame."""
-    C = points[1, :]  # central point - the palm
-    wrist_vec = points[0, :] - C
+    C = points[23, :]  # central point - the palm
+    wrist_vec = points[24, :] - C
     wrist_mag = np.sqrt(abs(wrist_vec.dot(wrist_vec)))
-    fingers_vec = points[[5, 9, 13, 17, 21], :] - C
+    # fingers_vec = points[[5, 9, 13, 17, 21], :] - C
+    fingers_vec = points[[29, 33, 37, 41, 45], :] - C
     fingers_mag = np.linalg.norm(fingers_vec, axis=1)
 
     features = np.zeros(24)
@@ -111,6 +116,14 @@ def calculate_features(points):
         idx1 += 1
         idx2 += 1
     return features
+
+
+# --------------------------- OLD FEATURES ------------------------------------
+# LMDHG
+# points_of_interest = [0, 1, 6, 10, 14, 18, 22, 23, 24, 29, 33, 37, 41, 45]
+# DHG
+# points_of_interest = [0, 1, 5, 9, 13, 17, 21]
+points_of_interest = np.arange(0, 22)
 
 
 def calculate_old_features(pattern):
