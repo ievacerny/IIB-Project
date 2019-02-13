@@ -8,21 +8,22 @@ from collections import Counter
 from prepare_inputs import (
     calculate_features,
     load_LMDHG_from_file,
-    load_DHG_dataset
+    load_DHG_dataset,
+    load_my_dataset
 )
 
 # ------------------------ PARAMETERS -----------------------------------------
 # Network parameters
-frame_step = 5  # Used to change the frame rate of the input
+frame_step = 1  # Used to change the frame rate of the input
 batch_size = 10
 learning_rate = 0.0005
-training_iters = 10000
-display_step = 100
+training_iters = 1000
+display_step = 50
 testing_iters = 50
 # Dimensionality parameters
 n_frames = 40
 n_dimension = 24
-n_output = 14
+n_output = 15
 n_hidden = 512  # Dimension of the hidden state
 
 np.random.seed(10)
@@ -53,11 +54,31 @@ def load_LMDHG(training_prop):
     return training_data, testing_data
 
 
+def load_custom(training_prop):
+    """Load and split my own data into training and testing data."""
+    all_gestures = []
+    all_labels = []
+    for i in range(1, 6):
+        new_gestures, new_labels = load_my_dataset(i)
+        all_gestures.append(new_gestures)
+        all_labels.append(new_labels)
+    training_data = (
+        np.concatenate(all_gestures[:int(training_prop*len(all_gestures))]),
+        np.concatenate(all_labels[:int(training_prop*len(all_gestures))])
+    )
+    testing_data = (
+        np.concatenate(all_gestures[int(training_prop*len(all_gestures)):]),
+        np.concatenate(all_labels[int(training_prop*len(all_gestures)):])
+    )
+    print(training_data[0].shape, testing_data[0].shape)
+    return training_data, testing_data
+
+
 def load_DHG(training_prop):
     """Load and split DHG data into training and testing data.
 
-
-    ************Not adapted for the new network*********** """
+    ************Not adapted for the new network***********
+    """
     all_gestures, all_labels = load_DHG_dataset()
     indices = np.arange(len(all_gestures))
     np.random.shuffle(indices)
@@ -74,7 +95,7 @@ def load_DHG(training_prop):
 
 # Load training data
 start_time = time.time()
-training_data, testing_data = load_LMDHG(0.8)
+training_data, testing_data = load_custom(0.8)
 print("Loaded training data in {} seconds".format(time.time() - start_time))
 
 # import sys
@@ -129,10 +150,15 @@ def get_window_start(testing=False):
         data = testing_data
     else:
         data = training_data
-    start_positions = np.arange(
-        0,
-        len(data[0])-n_frames*frame_step,
-        int(frame_step/2))
+    if frame_step > 1:
+        start_positions = np.arange(
+            0,
+            len(data[0])-n_frames*frame_step,
+            int(frame_step/2))
+    else:
+        start_positions = np.arange(
+            0,
+            len(data[0])-n_frames*frame_step)
     np.random.shuffle(start_positions)
     for position in start_positions:
             yield position
@@ -161,6 +187,10 @@ def get_data(generator, testing=False):
     labels = data[1][
         window_start:window_start+n_frames:frame_step]
     actual_label = Counter(labels).most_common(1)[0][0]
+    if actual_label > 14:
+        print(actual_label)
+        print(Counter(labels).most_common(1))
+        raise ValueError("Multiple most common")
     onehot_label[0, actual_label] = 1.0
 
     return np.array(features), onehot_label

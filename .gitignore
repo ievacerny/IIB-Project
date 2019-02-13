@@ -37,7 +37,9 @@ sysinfo.txt
 
 # Folders to ignore
 Private/
-Database/
+!Database
+Database/*
+!Database/MyDatabase
 Papers/
 
 # Latex and powerpoint temp files

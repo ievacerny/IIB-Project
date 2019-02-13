@@ -3,6 +3,7 @@ import numpy as np
 import scipy.io as sio
 from os.path import join as pjoin
 # import matplotlib.pyplot as plt
+from collections import Counter
 
 
 label_dict = {
@@ -23,6 +24,29 @@ label_dict = {
     "PIVOTER": 13,  # Rotate
     "CISEAUX": 12,  # scissors?????
 }
+
+
+def load_my_dataset(file_no, data_folder=None):
+    """Load coordinates and labels from data file of specified number."""
+    if data_folder is None:
+        data_folder = pjoin("..", "Database", "MyDatabase")
+
+    gestures = np.genfromtxt(pjoin(data_folder, "vid_{}.csv".format(file_no)),
+                             delimiter=',')
+    gestures = gestures[:, :21]
+    gestures = np.reshape(gestures, [gestures.shape[0], 7, 3])
+
+    labels = np.empty(gestures.shape[0], dtype='int32')
+    label_info = np.loadtxt(
+        pjoin(data_folder, "vid_{}_labels.txt".format(file_no)), dtype='int32')
+    prev_start, prev_lbl = 0, 0
+    for start, lbl in label_info:
+        if start != 0:
+            labels[prev_start:start] = prev_lbl
+        prev_start, prev_lbl = start, lbl
+    print(Counter(labels))
+
+    return gestures, labels
 
 
 def load_LMDHG_from_file(file_no, data_folder=None):
@@ -92,11 +116,14 @@ def load_DHG_dataset(no_instances=None, data_folder=None, frame_length=150):
 
 def calculate_features(points):
     """Obtain features from one frame."""
-    C = points[23, :]  # central point - the palm
-    wrist_vec = points[24, :] - C
+    # C = points[23, :]  # central point - the palm
+    # wrist_vec = points[24, :] - C
+    C = points[0, :]
+    wrist_vec = points[1, :] - C
     wrist_mag = np.sqrt(abs(wrist_vec.dot(wrist_vec)))
     # fingers_vec = points[[5, 9, 13, 17, 21], :] - C
-    fingers_vec = points[[29, 33, 37, 41, 45], :] - C
+    # fingers_vec = points[[29, 33, 37, 41, 45], :] - C
+    fingers_vec = points[[2, 3, 4, 5, 6], :] - C
     fingers_mag = np.linalg.norm(fingers_vec, axis=1)
 
     features = np.zeros(24)

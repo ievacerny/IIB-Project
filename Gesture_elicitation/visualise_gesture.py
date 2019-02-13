@@ -5,7 +5,7 @@ import numpy as np
 
 # ------------- LOAD DATA
 frames = []
-with open("test.csv", 'r') as csvf:
+with open("vid_5.csv", 'r') as csvf:
     reader = csv.reader(csvf)
     for row in reader:
         points = []
@@ -20,6 +20,7 @@ with open("test.csv", 'r') as csvf:
         frames.append(points)
 
 frames = np.array(frames)
+print(frames.shape)
 
 
 # -------------- EVENT HANDLERS
@@ -28,14 +29,22 @@ def onclick(event):
     if event.key == "left":
         if fno > 0:
             fno -= 1
+            ax = event.canvas.figure.gca()
+            elev, azim = ax.elev, ax.azim
             event.canvas.figure.clear()
-            plot_hand(event.canvas.figure.gca(projection='3d'), fno)
+            ax = event.canvas.figure.gca(projection='3d')
+            ax.view_init(elev=elev, azim=azim)
+            plot_hand(ax, fno)
             event.canvas.draw()
     elif event.key == "right":
         if fno < frames.shape[0] - 1:
             fno += 1
+            ax = event.canvas.figure.gca()
+            elev, azim = ax.elev, ax.azim
             event.canvas.figure.clear()
-            plot_hand(event.canvas.figure.gca(projection='3d'), fno)
+            ax = event.canvas.figure.gca(projection='3d')
+            ax.view_init(elev=elev, azim=azim)
+            plot_hand(ax, fno)
             event.canvas.draw()
 
 
@@ -43,9 +52,9 @@ def onclick(event):
 def plot_hand(ax, fno):
     ax.set_title(str(fno))
     frame = frames[fno, :, :]
-    ax.set_xlim(0, 0.2)
-    ax.set_ylim(-0.1, 0.1)
-    ax.set_zlim(0.2, 0.4)
+    ax.set_xlim(-0.2, 0.4)
+    ax.set_ylim(-0.3, 0.3)
+    ax.set_zlim(0, 0.6)
     ax.plot(frame[[0, 1], 0], frame[[0, 1], 1], frame[[0, 1], 2], ':',
             label="Wrist")
     for i in range(2, 7):
