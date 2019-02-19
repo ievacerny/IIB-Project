@@ -21,8 +21,8 @@ training_iters = 1000
 display_step = 50
 testing_iters = 50
 # Dimensionality parameters
-n_frames = 40
-n_dimension = 24
+n_frames = 20
+n_dimension = 10
 n_output = 15
 n_hidden = 512  # Dimension of the hidden state
 
@@ -150,19 +150,20 @@ def get_window_start(testing=False):
         data = testing_data
     else:
         data = training_data
-    if frame_step > 1:
-        start_positions = np.arange(
-            0,
-            len(data[0])-n_frames*frame_step,
-            int(frame_step/2))
-    else:
-        start_positions = np.arange(
-            0,
-            len(data[0])-n_frames*frame_step)
-    np.random.shuffle(start_positions)
-    for position in start_positions:
-            yield position
-    print("Done with all videos")
+    while True:
+        if frame_step > 1:
+            start_positions = np.arange(
+                0,
+                len(data[0])-n_frames*frame_step,
+                int(frame_step/2))
+        else:
+            start_positions = np.arange(
+                0,
+                len(data[0])-n_frames*frame_step)
+        np.random.shuffle(start_positions)
+        for position in start_positions:
+                yield position
+        print("Done with all videos")
 
 
 def get_data(generator, testing=False):

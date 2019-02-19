@@ -26,15 +26,37 @@ label_dict = {
 }
 
 
-def load_my_dataset(file_no, data_folder=None):
+mapping = np.loadtxt('mapping.csv', dtype='float', delimiter=',')
+mapping_t = mapping.T
+
+
+def load_my_dataset(file_no, data_folder=None, position_only=False):
     """Load coordinates and labels from data file of specified number."""
     if data_folder is None:
         data_folder = pjoin("..", "Database", "MyDatabase")
 
     gestures = np.genfromtxt(pjoin(data_folder, "vid_{}.csv".format(file_no)),
                              delimiter=',')
-    gestures = gestures[:, :21]
-    gestures = np.reshape(gestures, [gestures.shape[0], 7, 3])
+    if position_only:
+        gestures = gestures[:, :21]
+        gestures = np.reshape(gestures, [gestures.shape[0], 7, 3])
+        gestures = gestures - gestures[:, :1, :]
+    else:
+        # Wrist and finger tip positions
+        position_points_x = [i for i in range(0, 21, 3)]
+        position_points_y = [i+1 for i in range(0, 21, 3)]
+        position_points_z = [i+2 for i in range(0, 21, 3)]
+        # Bone beginning positions
+        position_points_x.extend([50+11*i for i in range(20)])
+        position_points_y.extend([51+11*i for i in range(20)])
+        position_points_z.extend([52+11*i for i in range(20)])
+
+        non_zero_gestures_norm = np.copy(gestures)
+        non_zero_gestures_norm[:, position_points_x] = gestures[:, position_points_x] - gestures[:, :1]
+        non_zero_gestures_norm[:, position_points_y] = gestures[:, position_points_y] - gestures[:, 1:2]
+        non_zero_gestures_norm[:, position_points_z] = gestures[:, position_points_z] - gestures[:, 2:3]
+
+        gestures = non_zero_gestures_norm
 
     labels = np.empty(gestures.shape[0], dtype='int32')
     label_info = np.loadtxt(
@@ -115,15 +137,21 @@ def load_DHG_dataset(no_instances=None, data_folder=None, frame_length=150):
 
 
 def calculate_features(points):
+    features = np.matmul(points[:-1], mapping_t)
+    # features = points[:-1]
+    return features
+
+
+def calculate_old_features(points):
     """Obtain features from one frame."""
     # C = points[23, :]  # central point - the palm
     # wrist_vec = points[24, :] - C
     C = points[0, :]
-    wrist_vec = points[1, :] - C
+    wrist_vec = points[1, :]
     wrist_mag = np.sqrt(abs(wrist_vec.dot(wrist_vec)))
     # fingers_vec = points[[5, 9, 13, 17, 21], :] - C
     # fingers_vec = points[[29, 33, 37, 41, 45], :] - C
-    fingers_vec = points[[2, 3, 4, 5, 6], :] - C
+    fingers_vec = points[[2, 3, 4, 5, 6], :]
     fingers_mag = np.linalg.norm(fingers_vec, axis=1)
 
     features = np.zeros(24)
