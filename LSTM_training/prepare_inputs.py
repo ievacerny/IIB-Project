@@ -26,8 +26,14 @@ label_dict = {
 }
 
 
-mapping = np.loadtxt('mapping.csv', dtype='float', delimiter=',')
-mapping_t = mapping.T
+# mapping = np.loadtxt('mapping.csv', dtype='float', delimiter=',')
+# mapping_t = mapping.T
+mapping_t = np.empty((1, 1))
+
+
+def set_mapping(mapping):
+    global mapping_t
+    mapping_t = mapping.T
 
 
 def load_my_dataset(file_no, data_folder=None, position_only=False):
@@ -56,7 +62,7 @@ def load_my_dataset(file_no, data_folder=None, position_only=False):
         non_zero_gestures_norm[:, position_points_y] = gestures[:, position_points_y] - gestures[:, 1:2]
         non_zero_gestures_norm[:, position_points_z] = gestures[:, position_points_z] - gestures[:, 2:3]
 
-        gestures = non_zero_gestures_norm
+        gestures = non_zero_gestures_norm[:, :-1]
 
     labels = np.empty(gestures.shape[0], dtype='int32')
     label_info = np.loadtxt(
@@ -137,7 +143,7 @@ def load_DHG_dataset(no_instances=None, data_folder=None, frame_length=150):
 
 
 def calculate_features(points):
-    features = np.matmul(points[:-1], mapping_t)
+    features = np.matmul(points, mapping_t)
     # features = points[:-1]
     return features
 
