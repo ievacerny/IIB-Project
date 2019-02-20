@@ -15,6 +15,7 @@ public class DataCollection : MonoBehaviour {
     StreamWriter writer;
 
 
+
     // Use this for initialization
     void Start () {
         provider = FindObjectOfType<LeapProvider>() as LeapProvider;
@@ -23,6 +24,12 @@ public class DataCollection : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+
+        int signal;
+        if (Input.GetKey(KeyCode.Space))
+            signal = 1;
+        else
+            signal = 0;
 
         int idx = frame_counter % 1;
 
@@ -85,6 +92,7 @@ public class DataCollection : MonoBehaviour {
                     printable += WriteQuaternion(b_rotations[i]) + ","; // 56:60 bone rotation
 
                 }
+                printable += signal;
 
                 writer.WriteLine(printable);
             }
