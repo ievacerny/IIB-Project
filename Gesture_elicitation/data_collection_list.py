@@ -2,20 +2,16 @@ from random import shuffle
 import sys
 
 gestures = [
-    "1 Flick hand to the left",
-    "2 Flick hand to the right",
-    "3 CCW circle with 1 finger",
-    "4 CW circle with 1 finger",
-    "5 Palm forwards, bend 4 fingers",
-    "6 Palm upwards, bend 4 fingers",
-    "7 Grab text out of the plane",
-    "8 Push hand into the plane",
-    "9 Contract hand and turn left",
-    "10 Contract hand and turn right",
-    "11 Form C",
-    "12 Form V",
-    "13 Wipe blackboard motion twice",
-    "14 Cross text out with 1 finger",
+    "UNDO - CCW circle",
+    "REDO - CW circle",
+    "COPY - letter C",
+    "PASTE - letter V",
+    "DELETE - flick hand to the left",
+    "UNDO - CCW circle",
+    "REDO - CW circle",
+    "COPY - letter C",
+    "PASTE - letter V",
+    "DELETE - flick hand to the left",
 ]
 
 zero_class = [

@@ -2,21 +2,28 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
+import sys
+
+# ------------- READ ARGUMENTS
+if len(sys.argv) == 2:
+    i = sys.argv[1]
+else:
+    i = 1
 
 # ------------- LOAD DATA
 frames = []
-with open("vid_5.csv", 'r') as csvf:
+with open("../Database/MyDatabase/vid_{}.csv".format(i), 'r') as csvf:
     reader = csv.reader(csvf)
     for row in reader:
         points = []
         for i in range(7):
             points.append([float(row[i*3]),
                            float(row[i*3+1]),
-                           float(row[i*3+2])])
+                           -1*float(row[i*3+2])])
         for i in range(20):
-            points.append([float(row[50+i*11]),
-                           float(row[51+i*11]),
-                           float(row[52+i*11])])
+            points.append([float(row[49+i*10]),
+                           float(row[50+i*10]),
+                           -1*float(row[51+i*10])])
         frames.append(points)
 
 frames = np.array(frames)
@@ -54,7 +61,7 @@ def plot_hand(ax, fno):
     frame = frames[fno, :, :]
     ax.set_xlim(-0.2, 0.4)
     ax.set_ylim(-0.3, 0.3)
-    ax.set_zlim(0, 0.6)
+    ax.set_zlim(-0.6, 0)
     ax.plot(frame[[0, 1], 0], frame[[0, 1], 1], frame[[0, 1], 2], ':',
             label="Wrist")
     for i in range(2, 7):

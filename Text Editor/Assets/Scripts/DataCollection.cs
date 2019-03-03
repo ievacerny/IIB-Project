@@ -11,25 +11,20 @@ public class DataCollection : MonoBehaviour {
 
     LeapProvider provider;
     int frame_counter = 0;
-    string path = "Assets/test.csv";
     StreamWriter writer;
+    string path;
 
 
 
     // Use this for initialization
     void Start () {
+        path = "../Database/MyDatabase/data_" + DateTime.Now.Ticks + ".csv";
         provider = FindObjectOfType<LeapProvider>() as LeapProvider;
         writer = new StreamWriter(path);
     }
 	
 	// Update is called once per frame
 	void Update () {
-
-        int signal;
-        if (Input.GetKey(KeyCode.Space))
-            signal = 1;
-        else
-            signal = 0;
 
         int idx = frame_counter % 1;
 
@@ -48,7 +43,6 @@ public class DataCollection : MonoBehaviour {
 
                 Vector[] f_directions = new Vector[5];
                 Vector[] f_positions = new Vector[5];
-                int[] b_types = new int[20];
                 Vector[] b_joint_beg = new Vector[20];
                 Vector[] b_directions = new Vector[20];
                 LeapQuaternion[] b_rotations = new LeapQuaternion[20];
@@ -60,7 +54,6 @@ public class DataCollection : MonoBehaviour {
                     f_positions[f_idx] = finger.TipPosition;
                     foreach (Bone bone in finger.bones)
                     {
-                        b_types[b_idx] = (int)bone.Type;
                         b_joint_beg[b_idx] = bone.PrevJoint;
                         b_directions[b_idx] = bone.Direction;
                         b_rotations[b_idx] = bone.Rotation;
@@ -70,29 +63,27 @@ public class DataCollection : MonoBehaviour {
                 }
                 
                 string printable = "";
-                printable += WriteVector(position) + ","; // 0:3 - hand position
-                printable += WriteVector(wrist_position) + ","; // 3:6 - wrist position
+                printable += WriteVector(position); // 0:3 - hand position
+                printable += "," + WriteVector(wrist_position); // 3:6 - wrist position
                 foreach (var f_pos in f_positions) //6:21 - fingertip positions from thumb to pinky
                 {
-                    printable += WriteVector(f_pos) + ",";
+                    printable += "," + WriteVector(f_pos);
                 }
-                printable += WriteVector(direction) + ","; // 21:24 - hand direction (from palm to fingers)
-                printable += WriteVector(palm_normal) + ","; // 24:27 - palm normal
-                printable += WriteVector(palm_velocity) + ","; // 27:30 - palm_velocity - zero?
-                printable += WriteQuaternion(rotation) + ","; // 30:34 - hand rotation
+                printable += "," + WriteVector(direction); // 21:24 - hand direction (from palm to fingers)
+                printable += "," + WriteVector(palm_normal); // 24:27 - palm normal
+                printable += "," + WriteVector(palm_velocity); // 27:30 - palm_velocity - zero?
+                printable += "," + WriteQuaternion(rotation); // 30:34 - hand rotation
                 foreach (var f_dir in f_directions) // 34:49 - fingertip positions from thumb to pinky
                 {
-                    printable += WriteVector(f_dir) + ",";
+                    printable += "," + WriteVector(f_dir);
                 }
                 for(int i=0; i<20; i++)
                 {
-                    printable += b_types[i] + ","; // 49, 60, 71, 82. 93, 104, 115, 126. 137, 148, 159, 170. 181, 192, 203, 214. 225, 236, 247, 258
-                    printable += WriteVector(b_joint_beg[i]) + ","; // 50:53 bone beginning
-                    printable += WriteVector(b_directions[i]) + ","; // 53:56 bone direction
-                    printable += WriteQuaternion(b_rotations[i]) + ","; // 56:60 bone rotation
+                    printable += "," + WriteVector(b_joint_beg[i]); // 49:52 bone beginning
+                    printable += "," + WriteVector(b_directions[i]); // 52:55 bone direction
+                    printable += "," + WriteQuaternion(b_rotations[i]); // 55:59 bone rotation
 
                 }
-                printable += signal;
 
                 writer.WriteLine(printable);
             }
@@ -102,7 +93,7 @@ public class DataCollection : MonoBehaviour {
 
     void OnApplicationQuit()
     {
-        Debug.Log("Application ending after " + Time.time + " seconds");
+        Debug.Log("Application ending after " + Time.time + " seconds. File " + path);
         writer.Close();
     }
 
