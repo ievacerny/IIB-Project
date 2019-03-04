@@ -53,9 +53,9 @@ def load_my_dataset(file_no, data_folder=None, position_only=False):
         position_points_y = [i+1 for i in range(0, 21, 3)]
         position_points_z = [i+2 for i in range(0, 21, 3)]
         # Bone beginning positions
-        position_points_x.extend([50+11*i for i in range(20)])
-        position_points_y.extend([51+11*i for i in range(20)])
-        position_points_z.extend([52+11*i for i in range(20)])
+        position_points_x.extend([49+10*i for i in range(20)])
+        position_points_y.extend([50+10*i for i in range(20)])
+        position_points_z.extend([51+10*i for i in range(20)])
 
         non_zero_gestures_norm = np.copy(gestures)
         non_zero_gestures_norm[:, position_points_x] = gestures[:, position_points_x] - gestures[:, :1]
