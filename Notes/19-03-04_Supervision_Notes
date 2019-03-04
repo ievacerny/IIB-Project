@@ -1,0 +1,5 @@
+Do offline analysis frame by frame with probability evolution.
+
+Try to make it work in Unity. First try with single thread.
+
+Show text when the gesture is done, otherwise too mysterious.
