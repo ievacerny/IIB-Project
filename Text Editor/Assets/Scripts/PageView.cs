@@ -14,6 +14,8 @@ public class PageView : MonoBehaviour {
     [SerializeField] private Transform text_cursor;
     [SerializeField] private TextMesh rendered_text;
     [SerializeField] public Renderer frame;
+    public bool selection_mode = false;
+    public bool trigger_active = false;
     #endregion
     #region Private Parameters
     private readonly float col_margin = 0.01824f;
@@ -22,14 +24,15 @@ public class PageView : MonoBehaviour {
     private readonly float height = 0.0626f;
     private readonly float object_z = -0.00001f;
     private readonly float selection_time_delay = 0.3f;
+    private readonly float default_collider_scale = 0.02f;
+    public float extended_collider_scale = 0.1f;
     #endregion
     #region Private Attributes
     private List<GameObject> selection_drawing;
     private Indices selection_start;
     private float selection_timer = 0f;
-    private float default_collider_scale = 0.02f;
-    private float extended_collider_scale = 0.1f;
-    private bool selection_mode = false;
+    private bool past_selection_mode = false;
+    private Transform trigger_finger;
     #endregion
 
     #region Unity Control
@@ -61,54 +64,54 @@ public class PageView : MonoBehaviour {
         ShowTextCursor(false);
         selection_start = null;
         selection_timer = 0f;
+        trigger_active = false;
+        if (selection_mode)
+        {
+            RemoveSelection();
+            selection_mode = false;
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.name == "IndexTip" && !selection_mode)
+        if (other.gameObject.name == "IndexTip")
         {
-            Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
+            trigger_active = true;
+            trigger_finger = other.transform;
+            Vector3 finger_coords = transform.InverseTransformPoint(trigger_finger.position);
             presenter.Click(CoordsToInd(finger_coords));
             SetFrameTransparency(1f);
             ShowTextCursor(true);
-        }
-        else if (other.gameObject.name == "MiddleTip")
-        {
-            SetFrameTransparency(1f);
-            selection_mode = true;
-            Vector3 size = transform.GetComponent<BoxCollider>().size;
-            size.z = extended_collider_scale;
-            transform.GetComponent<BoxCollider>().size = size;
-            ShowTextCursor(false);
-            Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
-            selection_start = CoordsToInd(finger_coords);
         }
     }
 
     private void OnTriggerStay(Collider other)
     {
-        if (other.gameObject.name == "MiddleTip")
+        if (other.gameObject.name == "IndexTip" && trigger_active && selection_mode)
         {
             Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
             presenter.ClickDrag(selection_start, CoordsToInd(finger_coords), true);
+        }
+        else if (other.gameObject.name == "IndexTip" && !trigger_active && !selection_mode)
+        {
+            SetFrameTransparency(0.5f);
+            trigger_active = false;
+            trigger_finger = null;
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.name == "IndexTip" && !selection_mode)
+        if (other.gameObject.name == "IndexTip")
         {
+            if (selection_mode)
+            {
+                ChangeSelectionModeStatus(false);
+            }
+
             SetFrameTransparency(0.5f);
-        }
-        else if (other.gameObject.name == "MiddleTip")
-        {
-            selection_mode = false;
-            Vector3 size = transform.GetComponent<BoxCollider>().size;
-            size.z = default_collider_scale;
-            transform.GetComponent<BoxCollider>().size = size;
-            Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
-            presenter.ClickDrag(selection_start, CoordsToInd(finger_coords), false);
-            SetFrameTransparency(0.5f);
+            trigger_active = false;
+            trigger_finger = null;
         }
     }
 
@@ -303,6 +306,37 @@ public class PageView : MonoBehaviour {
         Color new_color = frame.material.color;
         new_color.a = alpha;
         frame.material.color = new_color;
+    }
+
+    public void ChangeSelectionModeStatus(bool status, bool error=false)
+    {
+        // IMPORTANT: has to be changes before trigger_active
+        selection_mode = status;
+        Vector3 size = transform.GetComponent<BoxCollider>().size;
+        if (status)
+        {
+            Vector3 finger_coords = transform.InverseTransformPoint(trigger_finger.position);
+            selection_start = CoordsToInd(finger_coords);
+            size.z = extended_collider_scale;
+            transform.GetComponent<BoxCollider>().size = size;
+            ShowTextCursor(false);
+        }
+        else
+        {
+            if (!error)
+            {
+                Vector3 finger_coords = transform.InverseTransformPoint(trigger_finger.position);
+                presenter.ClickDrag(selection_start, CoordsToInd(finger_coords), false);
+            }
+            else
+            {
+                RemoveSelection();
+                ShowTextCursor(true);
+            }
+            size.z = default_collider_scale;
+            transform.GetComponent<BoxCollider>().size = size;
+        }
+ 
     }
 
     #endregion

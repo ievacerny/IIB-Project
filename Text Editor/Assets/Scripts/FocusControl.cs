@@ -61,4 +61,9 @@ public class FocusControl : MonoBehaviour {
             page_script.SetFrameTransparency(0f);
         }
     }
+
+    public GameObject GetActivePage()
+    {
+        return focused_page;
+    }
 }
