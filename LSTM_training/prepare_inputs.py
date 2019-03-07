@@ -62,7 +62,7 @@ def load_my_dataset(file_no, data_folder=None, position_only=False):
         non_zero_gestures_norm[:, position_points_y] = gestures[:, position_points_y] - gestures[:, 1:2]
         non_zero_gestures_norm[:, position_points_z] = gestures[:, position_points_z] - gestures[:, 2:3]
 
-        gestures = non_zero_gestures_norm[:, :-1]
+        gestures = non_zero_gestures_norm
 
     labels = np.empty(gestures.shape[0], dtype='int32')
     label_info = np.loadtxt(

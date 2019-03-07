@@ -41,6 +41,8 @@ Private/
 Database/*
 !Database/MyDatabase
 Papers/
+LSTM_training/hyper*
+LSTM_training/model*
 
 # Latex and powerpoint temp files
 Reports/*/*~$*

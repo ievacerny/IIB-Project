@@ -14,6 +14,8 @@ public class HandControl : MonoBehaviour {
     PageView current_page_script = null;
     public GRstate current_state = GRstate.NOTHING;
     Hand hand = null;
+    TCPClient client;
+    int update_counter = 0;
 
     // Use this for initialization
     void Start () {
@@ -24,10 +26,27 @@ public class HandControl : MonoBehaviour {
         {
             current_page_script = current_page.GetComponent<PageView>();
         }
+        client = new TCPClient();
     }
 	
 	// Update is called once per frame
 	void Update () {
+
+        update_counter++;
+        if (update_counter%5 != 0)
+        {
+            return;
+        }
+
+        //if (Input.GetKeyDown(KeyCode.Space))
+        //{
+        //    //Debug.Log("Before entering the send function");
+        //    client.SendMessage(EncodeFrameData());
+        //    //client.SendMessage("0");
+        //    //Debug.Log("After sending the message. Before the reading function");
+        //    client.ReadMessage();
+        //    //Debug.Log("After reading the message");
+        //}
 
         // Update page references
         GameObject new_page = focus.GetActivePage();
@@ -107,6 +126,8 @@ public class HandControl : MonoBehaviour {
             current_state = GRstate.NOTHING;
         }
 
+        UpdateWindow();
+
         switch (current_state)
         {
             case GRstate.SELECTION_ACTIVATE:
@@ -118,6 +139,8 @@ public class HandControl : MonoBehaviour {
                 break;
 
             case GRstate.ML:
+                client.SendMessage(EncodeFrameData());
+                client.ReadMessage();
                 break;
 
             default:
@@ -125,6 +148,12 @@ public class HandControl : MonoBehaviour {
         }
     }
 
+
+    private void UpdateWindow()
+    {
+        // TODO: Read data and send it to the model
+        return;
+    }
 
 
     private void CheckSelectionActivationGesture()
@@ -165,5 +194,50 @@ public class HandControl : MonoBehaviour {
             current_page_script.RemoveSelection();
             current_state = GRstate.ML;
         }
+    }
+
+    private void PredictGesture()
+    {
+        // Get the prediction of the gesture from the model. Might not be necessary
+        //Debug.Log(EncodeFrameData());
+        return;
+    }
+
+
+    private string EncodeFrameData()
+    {
+        string[] data_strings = new string[76];
+        Vector position = hand.PalmPosition;
+        data_strings[0] = WriteVector(position);
+        data_strings[1] = WriteVector(hand.WristPosition-position);
+        int bone_str_idx = 16;
+        for (int i=2; i<7; i++)
+        {
+            data_strings[i] = WriteVector(hand.Fingers[i - 2].TipPosition - position);
+            data_strings[i + 9] = WriteVector(hand.Fingers[i - 2].Direction);
+            foreach (Bone bone in hand.Fingers[i - 2].bones)
+            {
+                data_strings[bone_str_idx] = WriteVector(bone.PrevJoint - position);
+                data_strings[bone_str_idx + 1] = WriteVector(bone.Direction);
+                data_strings[bone_str_idx + 2] = WriteQuaternion(bone.Rotation);
+                bone_str_idx += 3;
+            }
+        }
+        data_strings[7] = WriteVector(hand.Direction);
+        data_strings[8] = WriteVector(hand.PalmNormal);
+        data_strings[9] = WriteVector(hand.PalmVelocity);
+        data_strings[10] = WriteQuaternion(hand.Rotation);
+
+        return string.Join(",", data_strings);
+    }
+
+    private string WriteVector(Vector v)
+    {
+        return (v.x + "," + v.y + "," + v.z);
+    }
+
+    private string WriteQuaternion(LeapQuaternion q)
+    {
+        return (q.w + "," + q.x + "," + q.y + "," + q.z);
     }
 }

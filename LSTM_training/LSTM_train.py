@@ -15,33 +15,24 @@ from prepare_inputs import (
 
 # ------------------------ PARAMETERS -----------------------------------------
 # Network parameters
-frame_step = 1  # Used to change the frame rate of the input
+frame_step = 5  # Used to change the frame rate of the input
 batch_size = 10
 learning_rate = 0.0005
-training_iters = 10000
+training_iters = 1000
 display_step = 50
 testing_iters = 50
-final_testing_iters = 1000
+final_testing_iters = 500
 # Dimensionality parameters
-n_frames = 40
+n_frames = 8
 n_dimension = 40
 n_output = 6
 n_hidden = 512  # Dimension of the hidden state
 
-# learning_rate_opts = [0.01, 0.001, 0.0005, 0.0001, 0.00001]
-# n_frames_opts = [100, 80, 60, 40, 20]
-# n_dimension_opts = [60, 40, 20]
-
-# option_sets = [
-#     (0.01, 40, 60),
-#     (0.0005, 40, 40),
-#     (0.00001, 20, 40)
-# ]
-
 
 # ------------------------ SAVE MODEL -----------------------------------------
 # export_dir = 'model_{}'.format(int(time.time()))
-# builder = tf.saved_model.builder.SavedModelBuilder(export_dir)
+export_dir = "model_I-1000_LD-2_S-5_F-8"
+builder = tf.saved_model.builder.SavedModelBuilder(export_dir)
 
 
 # ------------------------ LOAD DATA ------------------------------------------
@@ -120,13 +111,15 @@ print("Loaded training data in {} seconds".format(time.time() - start_time))
 # for learning_rate, n_frames, n_dimension in option_sets:
 # for learning_rate in learning_rates:
 
-tf.reset_default_graph()
-hyper_string = "L-{0}_F-{1}_D-{2}_Gest-".format(
-    learning_rate, n_frames, n_dimension)
+# tf.reset_default_graph()
+# hyper_string = "L-{0}_F-{1}_D-{2}_Gest-".format(
+#     learning_rate, n_frames, n_dimension)
 
 set_mapping(V[:n_dimension, :])
 print(training_data[0].shape, testing_data[0].shape)
 np.random.seed(10)
+np.savetxt(export_dir+'/mapping.csv', V[:n_dimension, :],
+           delimiter=',', fmt='%f')
 
 
 # ------------------------ NETWORK DEFINITION --------------------------------
@@ -190,8 +183,7 @@ def get_window_start(testing=False):
         if frame_step > 1:
             start_positions = np.arange(
                 0,
-                len(data[0])-n_frames*frame_step,
-                int(frame_step/2))
+                len(data[0])-n_frames*frame_step)
         else:
             start_positions = np.arange(
                 0,
@@ -220,7 +212,10 @@ def get_data(generator, testing=False):
     onehot_label = np.zeros((1, n_output), dtype=float)
     labels = data[1][
         window_start:window_start+n_frames:frame_step]
-    actual_label = Counter(labels).most_common(1)[0][0]
+    # actual_label = Counter(labels).most_common(1)[0][0]
+    actual_label = labels[-2]
+    # actual_label = np.bincount(labels, minlength=n_output) / n_frames
+    # actual_label = np.reshape(actual_label, [1, n_output])
     onehot_label[0, actual_label] = 1.0
 
     return np.array(features), onehot_label
@@ -322,8 +317,8 @@ def final_test(session, test_generator, save=False, writers=None, step=0):
 
     # Report
     report_string = (
-        "---------- Testing accuracy {}\n".format(accuracy_testing/final_testing_iters) +
-        "   " + " ".join("{:>8}".format(n) for n in np.arange(0, n_output)) + "\n"
+        "---------- Testing accuracy {}\n".format(accuracy_testing/final_testing_iters) +  # noqa
+        "   " + " ".join("{:>8}".format(n) for n in np.arange(0, n_output)) + "\n"  # noqa
         "GC " + " ".join("{:>8}".format(n) for n in gesture_counts) + "\n"
         "--\n"
     )
@@ -338,23 +333,10 @@ def final_test(session, test_generator, save=False, writers=None, step=0):
         "FPR" + " ".join("{:>8.5f}".format(n) for n in fpr) + "\n"
     )
     if save:
-        with open("hyperparameters/"+hyper_string+"/test.txt", 'w+') as f:
+        with open(export_dir+"/test.txt", 'w+') as f:
             f.write(report_string)
     else:
         print(report_string)
-
-    # print("---------- Testing accuracy ", accuracy_testing/final_testing_iters)
-    # print("  ", " ".join("{:>8}".format(n) for n in np.arange(0, n_output)))
-    # print("GC", " ".join("{:>8}".format(n) for n in gesture_counts))
-    # print("--")
-    # for i, term in enumerate(["TP", "TN", "FP", "FN"]):
-    #     print("{0} {1}".format(
-    #         term,
-    #         " ".join("{:>8}".format(n) for n in rec_numbers[i, :])))
-    # print("--")
-    # print("RR", " ".join("{:>8.5f}".format(n) for n in rr))
-    # print("TPR" + " ".join("{:>8.5f}".format(n) for n in tpr))
-    # print("FPR" + " ".join("{:>8.5f}".format(n) for n in fpr))
 
 
 def plot_graphs(accuracy_train, accuracy_test, loss, save=False):
@@ -365,7 +347,7 @@ def plot_graphs(accuracy_train, accuracy_test, loss, save=False):
     plt.ylabel("Loss")
     plt.xlabel("Epoch")
     if save:
-        plt.savefig("hyperparameters/"+hyper_string+"/loss.png")
+        plt.savefig(export_dir+"/loss.png")
     else:
         plt.show()
 
@@ -378,7 +360,7 @@ def plot_graphs(accuracy_train, accuracy_test, loss, save=False):
     plt.xlabel("Epoch")
     plt.gca().legend()
     if save:
-        plt.savefig("hyperparameters/"+hyper_string+"/accuracy.png")
+        plt.savefig(export_dir+"/accuracy.png")
     else:
         plt.show()
 
@@ -398,20 +380,14 @@ with tf.Session() as session:
     train_gen = get_window_start()
     test_gen = get_window_start(True)
     # ------------------------ Logging
-    writers = []
-    writers.append(tf.summary.FileWriter(
-        "hyperparameters/" + hyper_string,
-        session.graph))
-    for i in range(1, 6):
-        writers.append(tf.summary.FileWriter(
-            "hyperparameters/" + hyper_string + str(i),
-            session.graph))
-    print(writers)
+    writer = tf.summary.FileWriter(
+        export_dir+"/logs",
+        session.graph)
 
     while step < training_iters:
         # ------------- Training
         true_output, prediction, acc_total, loss_total = train(
-            session, train_gen, acc_total, loss_total, writers[0], step)
+            session, train_gen, acc_total, loss_total, writer, step)
         step += 1
         # -------------- Epoch end
         if step % display_step == 0:
@@ -432,7 +408,7 @@ with tf.Session() as session:
             test_summary = tf.Summary()
             test_summary.value.add(
                 tag='Test accuracy', simple_value=average_test_acc)
-            writers[0].add_summary(test_summary, step)
+            writer.add_summary(test_summary, step)
             # -------------- Report
             print("Iter={}, ".format(step) +
                   "Average loss={:.6f}, ".format(average_loss) +
@@ -443,27 +419,20 @@ with tf.Session() as session:
             accuracy_graph_test.append(average_test_acc)
             loss_graph.append(average_loss)
 
-        if step % 500 == 0:
-            final_test(session, test_gen, writers=writers, step=step)
-
     print("Elapsed time: ", time.time() - start_time)
 
-    # print("Run on command line.")
-    # print("\ttensorboard --logdir=%s" % ())
-    # print("Point your web browser to: http://localhost:6006/")
-
     # -------------- After training validation
-    # final_test(session, test_gen, save=True)
+    final_test(session, test_gen, save=True)
     # -------------- Plot loss and accuracy
     plot_graphs(accuracy_graph_train, accuracy_graph_test, loss_graph,
                 save=True)
 
     # -------------------- SAVE MODEL ----------------------------------------
-    # signature = tf.saved_model.predict_signature_def(
-    #     inputs={'myInput': x},
-    #     outputs={'myOutput': pred})
-    # builder.add_meta_graph_and_variables(
-    #     sess=session,
-    #     tags=["myTag"],
-    #     signature_def_map={'predict': signature})
-    # builder.save()
+    signature = tf.saved_model.predict_signature_def(
+        inputs={'myInput': x},
+        outputs={'myOutput': pred})
+    builder.add_meta_graph_and_variables(
+        sess=session,
+        tags=["myTag"],
+        signature_def_map={'predict': signature})
+    builder.save()

@@ -6,10 +6,11 @@ import sys
 import tensorflow as tf
 
 # ---------------------------- PARAMETERS -------------------------------------
-model_path = r"model_I-2500_LD"
+model_path = r"model_I-1000_LD-2_S-5_F-8"
 data_path = r"..\\Database\\MyDatabase\\"
-n_frames = 40
+n_frames = 8
 n_dimension = 40
+frame_step = 5
 
 # ---------------------------- READ ARGUMENTS ---------------------------------
 if len(sys.argv) == 2:
@@ -39,7 +40,7 @@ def load_data(vid_no=1):
         gestures[:, position_points_y] - gestures[:, 1:2])
     non_zero_gestures_norm[:, position_points_z] = (
         gestures[:, position_points_z] - gestures[:, 2:3])
-    gestures = non_zero_gestures_norm[:, :-1]  # TODO Fix this both in train and test
+    gestures = non_zero_gestures_norm
 
     return gestures
 
@@ -124,6 +125,7 @@ def on_key(event):
 
 # Load and prep data
 full_data = load_data(vid_no)
+full_data = full_data[::frame_step]
 mapping = np.loadtxt(model_path+'/mapping.csv', dtype='float', delimiter=',')
 mapping_t = mapping.T
 slider = slide_window(full_data)
