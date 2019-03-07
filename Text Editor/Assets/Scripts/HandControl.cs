@@ -1,133 +1,103 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Leap;
+﻿using Leap;
 using Leap.Unity;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
 
-public class HandControl : MonoBehaviour {
-
+public class HandControl : MonoBehaviour
+{
     public enum GRstate { NOTHING, ML, SELECTION_ACTIVATE, SELECTION_DEACTIVATE };
 
-    LeapProvider provider;
-    FocusControl focus;
-    GameObject current_page;
-    PageView current_page_script = null;
-    public GRstate current_state = GRstate.NOTHING;
-    Hand hand = null;
-    TCPClient client;
-    int update_counter = 0;
+    #region Parameters
+    [SerializeField] private int frame_step = 5;
+    [SerializeField] private bool record_data = false;
+    private string file_path = "../Database/MyDatabase/data_";
+    #endregion
+    #region Private Attributes
+    [SerializeField] private GRstate current_state = GRstate.NOTHING;
+    private int update_counter = 0;
+    private TCPClient client;
+    private bool connection_active = false;
+    private LeapProvider provider;
+    private Hand hand = null;
+    private FocusControl focus;
+    private GameObject current_page;
+    private PageView current_page_script = null;
+    private StreamWriter writer = null;
+    #endregion
 
-    // Use this for initialization
-    void Start () {
-        provider = FindObjectOfType<LeapProvider>() as LeapProvider;
+    #region Unity Functions
+
+    void Start()
+    {
+        client = new TCPClient();
+        connection_active = client.IsClientConnected();
+        provider = GetComponent<LeapProvider>();
         focus = GetComponent<FocusControl>();
         current_page = focus.GetActivePage();
         if (current_page != null)
-        {
             current_page_script = current_page.GetComponent<PageView>();
+
+        if (record_data)
+        {
+            file_path = file_path + DateTime.Now.Ticks + ".csv";
+            writer = new StreamWriter(file_path);
         }
-        client = new TCPClient();
     }
 	
-	// Update is called once per frame
-	void Update () {
-
+	void Update()
+    {
         update_counter++;
-        if (update_counter%5 != 0)
-        {
-            return;
-        }
 
-        //if (Input.GetKeyDown(KeyCode.Space))
-        //{
-        //    //Debug.Log("Before entering the send function");
-        //    client.SendMessage(EncodeFrameData());
-        //    //client.SendMessage("0");
-        //    //Debug.Log("After sending the message. Before the reading function");
-        //    client.ReadMessage();
-        //    //Debug.Log("After reading the message");
-        //}
-
-        // Update page references
+        // Update page and page script references
         GameObject new_page = focus.GetActivePage();
-        if (GameObject.ReferenceEquals(new_page, current_page))
-        {
-            if (current_page != null && current_page_script == null)
-            {
-                current_page_script = current_page.GetComponent<PageView>();
-            }
-        }
-        else
+        if (!GameObject.ReferenceEquals(new_page, current_page))
         {
             current_page = new_page;
             if (current_page != null)
-            {
                 current_page_script = current_page.GetComponent<PageView>();
-            }
             else
-            {
                 current_page_script = null;
-            }
         }
 
-        // If no page is active, no gesture recognition needed
+        // If no page is active, no need to look for the hand
         if (current_page == null)
         {
             current_state = GRstate.NOTHING;
-            return;
-        }
-
-        // Determine the state of the recognition network
-        Frame frame = provider.CurrentFrame;
-        if (frame.Hands.Count != 0)
-        {
-            hand = null;
-            // Find a right hand in the frame. If no right hands - return
-            foreach(Hand any_hand in frame.Hands)
-            {
-                if (any_hand.IsRight)
-                {
-                    hand = any_hand;
-                    break;
-                }
-            }
-            if (hand == null)
-            {
-                if (current_page_script.selection_mode) current_page_script.RemoveSelection();
-                current_page_script.selection_mode = false;
-                current_page_script.trigger_active = false;
-                current_state = GRstate.NOTHING;
-                return;
-            }
-
-            if (current_page_script.trigger_active && !current_page_script.selection_mode)
-            {
-                current_state = GRstate.SELECTION_ACTIVATE;
-            }
-            else if (current_page_script.trigger_active && current_page_script.selection_mode)
-            {
-                current_state = GRstate.SELECTION_DEACTIVATE;
-            }
-            else if (!current_page_script.trigger_active && !current_page_script.selection_mode)
-            {
-                current_state = GRstate.ML;
-            }
-            else
-            {
-                Debug.LogWarning("Unexpected gesture recognition activation state");
-            }
         }
         else
         {
-            hand = null;
-            if (current_page_script.selection_mode) current_page_script.RemoveSelection();
-            current_page_script.selection_mode = false;
-            current_page_script.trigger_active = false;
-            current_state = GRstate.NOTHING;
+            // Determine the state of the recognition network (and possibly record data)
+            hand = FindRightHand(provider.CurrentFrame);
+            if (hand == null)
+            {
+                if (current_page_script.selection_mode)
+                    current_page_script.RemoveSelection();
+                current_page_script.selection_mode = false;
+                current_page_script.trigger_active = false;
+                current_state = GRstate.NOTHING;
+            }
+            else
+            {
+                if (current_page_script.trigger_active && !current_page_script.selection_mode)
+                    current_state = GRstate.SELECTION_ACTIVATE;
+                else if (current_page_script.trigger_active && current_page_script.selection_mode)
+                    current_state = GRstate.SELECTION_DEACTIVATE;
+                else if (!current_page_script.trigger_active && !current_page_script.selection_mode)
+                    current_state = GRstate.ML;
+                else
+                    Debug.LogWarning("Unexpected gesture recognition activation state");
+
+                if (record_data)
+                {
+                    if (update_counter % frame_step == 0)
+                        RecordFrame();
+                }
+            }
         }
 
-        UpdateWindow();
-
+        // Take care of selection and deselection
         switch (current_state)
         {
             case GRstate.SELECTION_ACTIVATE:
@@ -138,23 +108,104 @@ public class HandControl : MonoBehaviour {
                 CheckSelectionDeactivationGesture();
                 break;
 
-            case GRstate.ML:
-                client.SendMessage(EncodeFrameData());
-                client.ReadMessage();
-                break;
-
             default:
                 break;
         }
+
+        // Every n-th frame actually communicate with the server and update the gesture code
+        if (update_counter % frame_step == 0)
+        {
+            SendGestureData();
+            int gesture_code = ReadGestureCode();
+            if (current_state != GRstate.ML)
+                current_page_script.gesture_code = 0;
+            else
+                current_page_script.gesture_code = gesture_code;
+        }
+        // In between server communications, keep the same ML gesture code or set to 0 if the state has changed
+        else
+        {
+            if (current_state != GRstate.ML && current_page_script.gesture_code != 0)
+                current_page_script.gesture_code = 0;
+        }
     }
 
-
-    private void UpdateWindow()
+    void OnApplicationQuit()
     {
-        // TODO: Read data and send it to the model
-        return;
+        if (record_data)
+        {
+            Debug.Log("Application ending after " + Time.time + " seconds. File " + file_path);
+            writer.Close();
+        }
     }
 
+    #endregion
+
+    #region Private Methods
+
+    private Hand FindRightHand(Frame frame)
+    {
+        if (frame.Hands.Count == 0)
+            return null;
+        Hand right_hand = null;
+        foreach (Hand any_hand in frame.Hands)
+        {
+            if (any_hand.IsRight)
+            {
+                right_hand = any_hand;
+                break;
+            }
+        }
+        return right_hand;
+    }
+
+    private void SendGestureData()
+    {
+        if (!connection_active)
+            return;
+
+        try
+        {
+            if (current_state == GRstate.ML)
+                client.SendMessage(EncodeFrameData());
+            else
+                client.SendMessage("0");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(string.Format("Exception: {0}", e));
+            connection_active = false;
+        }
+    }
+
+    private int ReadGestureCode()
+    {
+        if (!connection_active)
+            return 0;
+
+        string message = "";
+
+        try
+        {
+            message = client.ReadMessage();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(string.Format("Exception: {0}", e));
+            connection_active = false;
+            return 0;
+        }
+
+        if (message.Length == 1)
+        {
+            return Convert.ToInt32(message);
+        }
+        else
+        {
+            Debug.LogWarning("Received unexpected message: " + message);
+            return 0;
+        }
+    }
 
     private void CheckSelectionActivationGesture()
     {
@@ -196,14 +247,6 @@ public class HandControl : MonoBehaviour {
         }
     }
 
-    private void PredictGesture()
-    {
-        // Get the prediction of the gesture from the model. Might not be necessary
-        //Debug.Log(EncodeFrameData());
-        return;
-    }
-
-
     private string EncodeFrameData()
     {
         string[] data_strings = new string[76];
@@ -240,4 +283,10 @@ public class HandControl : MonoBehaviour {
     {
         return (q.w + "," + q.x + "," + q.y + "," + q.z);
     }
+
+    private void RecordFrame()
+    {
+        writer.WriteLine(EncodeFrameData());
+    }
+    #endregion
 }

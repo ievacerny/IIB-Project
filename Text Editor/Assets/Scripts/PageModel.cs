@@ -1,9 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class PageModel{
-
+public class PageModel
+{
     #region Private Attributes
     private string text = "";
     private LimitedStack<string> undo_stack = new LimitedStack<string>(10);

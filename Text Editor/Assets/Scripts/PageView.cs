@@ -9,13 +9,18 @@ public class PageView : MonoBehaviour {
     private PagePresenter presenter;
     #endregion
     #region Serialized Attributes
+    [SerializeField] private GameObject feedback;
     [SerializeField] private GameObject selection_prefab;
     [SerializeField] private Transform mouse_cursor;
     [SerializeField] private Transform text_cursor;
     [SerializeField] private TextMesh rendered_text;
     [SerializeField] public Renderer frame;
+    [SerializeField] private float feedback_duration = 1f;
+    #endregion
+    #region Public Attributes
     public bool selection_mode = false;
     public bool trigger_active = false;
+    public int gesture_code = 0;
     #endregion
     #region Private Parameters
     private readonly float col_margin = 0.01824f;
@@ -25,14 +30,17 @@ public class PageView : MonoBehaviour {
     private readonly float object_z = -0.00001f;
     private readonly float selection_time_delay = 0.3f;
     private readonly float default_collider_scale = 0.02f;
+    private readonly string[] gesture_map = new string[] { "", "Undo", "Redo", "Copy", "Paste", "Delete" };
     public float extended_collider_scale = 0.1f;
     #endregion
     #region Private Attributes
     private List<GameObject> selection_drawing;
     private Indices selection_start;
     private float selection_timer = 0f;
+    private float feedback_timer = 0f;
     private bool past_selection_mode = false;
     private Transform trigger_finger;
+    private UnityEngine.UI.Text text;
     #endregion
 
     #region Unity Control
@@ -50,6 +58,11 @@ public class PageView : MonoBehaviour {
 
         Assert.IsNotNull(text_cursor, "No text cursor associated with the page");
 
+        if (feedback != null)
+            text = feedback.GetComponentInChildren<UnityEngine.UI.Text>();
+        else
+            Debug.LogError("Feedback system reference is not provided.");
+
         this.enabled = false;
     }
 
@@ -65,6 +78,8 @@ public class PageView : MonoBehaviour {
         selection_start = null;
         selection_timer = 0f;
         trigger_active = false;
+        text.text = "";
+        feedback.SetActive(false);
         if (selection_mode)
         {
             RemoveSelection();
@@ -105,9 +120,7 @@ public class PageView : MonoBehaviour {
         if (other.gameObject.name == "IndexTip")
         {
             if (selection_mode)
-            {
                 ChangeSelectionModeStatus(false);
-            }
 
             SetFrameTransparency(0.5f);
             trigger_active = false;
@@ -115,11 +128,52 @@ public class PageView : MonoBehaviour {
         }
     }
 
-    void Update ()
-    {    
-        //
+    void Update()
+    {
+        #region Feedback and gesture control
+        if (gesture_code == 0)
+        {
+            if (feedback_timer == 0f)
+                return;
+            if (Time.time - feedback_timer > feedback_duration)
+            {
+                feedback.SetActive(false);
+                text.text = "";
+                feedback_timer = 0f;
+            }
+        }
+        else
+        {
+            if (!feedback.activeSelf)
+                feedback.SetActive(true);
+            if (text.text != gesture_map[gesture_code])
+            {
+                text.text = gesture_map[gesture_code];
+                Debug.Log(string.Format("Do action {0}", gesture_code));
+                switch (gesture_code)
+                {
+                    case 1:
+                        presenter.Undo();
+                        break;
+                    case 2:
+                        presenter.Redo();
+                        break;
+                    case 3:
+                        presenter.Copy();
+                        break;
+                    case 4:
+                        presenter.Paste();
+                        break;
+                    case 5:
+                        presenter.InputString("\b");
+                        break;
+                }
+            }
+            feedback_timer = Time.time;
+        }
+        #endregion
 
-        // Mouse clicks
+        #region Mouse and keyboard controls
         if (mouse_cursor != null)
         {
             Vector3 mouse_coords = transform.InverseTransformPoint(mouse_cursor.position);
@@ -192,9 +246,8 @@ public class PageView : MonoBehaviour {
 
         // Input string
         if (Input.inputString.Length != 0)
-        {
             presenter.InputString(Input.inputString);
-        }
+        #endregion
     }
 
     #endregion
@@ -295,12 +348,6 @@ public class PageView : MonoBehaviour {
         this.mouse_cursor = mouse_cursor;
     }
 
-    public void ChangePresenterReference(PagePresenter new_presenter)
-    {
-        // Needed for testing purposes
-        presenter = new_presenter;
-    }
-
     public void SetFrameTransparency(float alpha)
     {
         Color new_color = frame.material.color;
@@ -336,7 +383,6 @@ public class PageView : MonoBehaviour {
             size.z = default_collider_scale;
             transform.GetComponent<BoxCollider>().size = size;
         }
- 
     }
 
     #endregion
@@ -388,6 +434,16 @@ public class PageView : MonoBehaviour {
         };
 
         return coords;
+    }
+
+    #endregion
+
+    #region Testing Interface
+
+    public void ChangePresenterReference(PagePresenter new_presenter)
+    {
+        // Needed for testing purposes
+        presenter = new_presenter;
     }
 
     #endregion

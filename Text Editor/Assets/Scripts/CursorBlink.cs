@@ -1,21 +1,21 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Assertions;
 
-public class CursorBlink : MonoBehaviour {
-
+public class CursorBlink : MonoBehaviour
+{
     public int blinking_rate = 25;
     private int counter = 1;
 
     private Renderer rend;
 
-	void Start () {
+	void Start()
+    {
         rend = GetComponent<Renderer>();
         Assert.IsNotNull(rend);
 	}
 	
-	void Update () {
+	void Update()
+    {
         if (counter % blinking_rate == 0)
         {
             rend.enabled = !rend.enabled;

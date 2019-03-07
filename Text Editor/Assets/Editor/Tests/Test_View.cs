@@ -1,7 +1,5 @@
-﻿using UnityEngine;
-using UnityEngine.TestTools;
-using NUnit.Framework;
-using System.Collections;
+﻿using NUnit.Framework;
+using UnityEngine;
 
 public class TestViewCoordinates
 {
@@ -49,5 +47,4 @@ public class TestViewCoordinates
         Assert.AreEqual(exp_x, coords.x, allowed_delta, "X coordinate different");
         Assert.AreEqual(exp_y, coords.y, allowed_delta, "Y coordinate different");
     }
-
 }

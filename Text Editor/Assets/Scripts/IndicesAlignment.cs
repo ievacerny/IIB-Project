@@ -1,10 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 [ExecuteInEditMode]
-public class IndicesAlignment : MonoBehaviour {
-
+public class IndicesAlignment : MonoBehaviour
+{
     /*
     Script is to be used when the character indices get misaligned.
     Attach the script to the COPY of the page prefab. The script will create bunch of
@@ -72,5 +70,4 @@ public class IndicesAlignment : MonoBehaviour {
             }
         }
     }
-
 }

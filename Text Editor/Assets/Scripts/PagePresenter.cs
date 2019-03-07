@@ -1,10 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class PagePresenter
 {
-
     #region Model View Refereces
     private PageModel model;
     private PageView view;

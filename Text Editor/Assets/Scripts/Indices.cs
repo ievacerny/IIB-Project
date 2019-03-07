@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-
-public class Indices
+﻿public class Indices
 {
     public int row;
     public int col;

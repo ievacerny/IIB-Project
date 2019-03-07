@@ -1,26 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using UnityEngine;
 
 class TCPClient
 {
-    string serverIpAddressString = "localhost";
-    int port = 65432;
-    //string message = "Hey there from the client. Please respond.";
-    TcpClient client;
+    #region Private Attributes
+    private readonly string serverIpAddressString = "localhost";
+    private readonly int port = 65432;
+    private TcpClient client;
+    #endregion
 
+    #region Constructor, Destructor
+
+    /// <summary>
+    /// TCPClient class constructor. Establishes the connections with an open server.
+    /// </summary>
+    /// <returns></returns>
     public TCPClient()
     {
         client = Connect(serverIpAddressString, port);
-
         if (!client.Connected)
         {
-            Debug.Log("Failed to connect.");
+            Debug.LogError(String.Format("Failed to connect to {0}:{1}", serverIpAddressString, port));
             return;
         }
     }
 
+    /// <summary>
+    /// TCPClient class destructor. Closes the socket.
+    /// </summary>
+    /// <returns></returns>
     ~TCPClient()
     {
         Debug.Log("Closing the socket");
@@ -33,6 +42,10 @@ class TCPClient
             Debug.Log(e.Message);
         }
     }
+
+    #endregion
+
+    #region Private Methods
 
     private TcpClient Connect(String server, int port)
     {
@@ -53,13 +66,22 @@ class TCPClient
 
         return client;
     }
+    
+    #endregion
 
-    public void SendMessage(string message)
+    #region Public Interface Methods
+
+    /// <summary>
+    /// Send a message to the server.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="log">[default=false] True if sent message should be logged.</param>
+    /// <returns></returns>
+    public void SendMessage(string message, bool log=false)
     {
-        
         // Translate the passed message into ASCII and store it as a Byte array.
         Byte[] data = System.Text.Encoding.ASCII.GetBytes(message);
-        
+     
         // Get a client stream for writing.
         NetworkStream stream = client.GetStream();
         
@@ -67,16 +89,20 @@ class TCPClient
         stream.Write(data, 0, data.Length);
         
         // Report what was sent to console
-        //Debug.Log("Sent: " + message);
+        if (log)
+            Debug.Log("Sent: " + message);
 
         // Flush the stream
         stream.Flush();
-        
     }
 
-    public void ReadMessage()
+    /// <summary>
+    /// Listen for and read a message from the server (blocking call).
+    /// </summary>
+    /// <param name="log">[default=false] True if received message should be logged.</param>
+    /// <returns>The message received.</returns>
+    public string ReadMessage(bool log=false)
     {
-        
         // Buffer to store the response bytes.
         Byte[] data = new Byte[1024];
         
@@ -90,8 +116,21 @@ class TCPClient
         Int32 bytes = stream.Read(data, 0, data.Length);
         responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
         
-
         // Report what was received to console
-        Debug.Log("Received: " + responseData);
+        if (log)
+            Debug.Log("Received: " + responseData);
+
+        return responseData;
     }
+
+    /// <summary>
+    /// Check the connectivity status
+    /// </summary>
+    /// <returns>Returns true/false.</returns>
+    public bool IsClientConnected()
+    {
+        return client.Connected;
+    }
+
+    #endregion
 }
