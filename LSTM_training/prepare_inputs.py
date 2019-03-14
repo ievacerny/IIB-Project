@@ -3,7 +3,7 @@ import numpy as np
 import scipy.io as sio
 from os.path import join as pjoin
 # import matplotlib.pyplot as plt
-from collections import Counter
+# from collections import Counter
 
 
 label_dict = {
@@ -31,50 +31,71 @@ label_dict = {
 mapping_t = np.empty((1, 1))
 
 
-def set_mapping(mapping):
-    global mapping_t
-    mapping_t = mapping.T
-
-
-def load_my_dataset(file_no, data_folder=None, position_only=False):
-    """Load coordinates and labels from data file of specified number."""
+def set_mapping(n_dimension, data_folder=None):
+    """Read mapping from file and save it for feature calculations."""
     if data_folder is None:
         data_folder = pjoin("..", "Database", "MyDatabase")
 
-    gestures = np.genfromtxt(pjoin(data_folder, "vid_{}.csv".format(file_no)),
-                             delimiter=',')
-    if position_only:
-        gestures = gestures[:, :21]
-        gestures = np.reshape(gestures, [gestures.shape[0], 7, 3])
-        gestures = gestures - gestures[:, :1, :]
-    else:
-        # Wrist and finger tip positions
-        position_points_x = [i for i in range(0, 21, 3)]
-        position_points_y = [i+1 for i in range(0, 21, 3)]
-        position_points_z = [i+2 for i in range(0, 21, 3)]
-        # Bone beginning positions
-        position_points_x.extend([49+10*i for i in range(20)])
-        position_points_y.extend([50+10*i for i in range(20)])
-        position_points_z.extend([51+10*i for i in range(20)])
+    mapping = np.genfromtxt(pjoin(data_folder, "svd_V.csv"), delimiter=',')
+    print(mapping.shape)
+    global mapping_t
+    mapping_t = mapping[:n_dimension, :].T
 
-        non_zero_gestures_norm = np.copy(gestures)
-        non_zero_gestures_norm[:, position_points_x] = gestures[:, position_points_x] - gestures[:, :1]
-        non_zero_gestures_norm[:, position_points_y] = gestures[:, position_points_y] - gestures[:, 1:2]
-        non_zero_gestures_norm[:, position_points_z] = gestures[:, position_points_z] - gestures[:, 2:3]
 
-        gestures = non_zero_gestures_norm
+def load_my_dataset(file_numbers, data_folder=None):
+    """Load coordinates and labels from data file of specified number."""
+    if data_folder is None:
+        data_folder = pjoin("..", "Database", "MyDatabase")
+    labels = np.empty(60000, dtype='int32')
+    prev_video = 0
+    for i in file_numbers:
+        if i < 100:
+            label_info = np.loadtxt(
+                pjoin(data_folder, "vid_{}_labels.txt".format(i)),
+                dtype='int32')
+        else:
+            file_no = i % 100
+            label_info = np.loadtxt(
+                pjoin(data_folder, "random_{}_labels.txt".format(file_no)),
+                dtype='int32')
+        prev_start, prev_lbl = 0, 0
+        for start, lbl in label_info:
+            # print(start, "->", start+prev_video, " : ", lbl)
+            if start != 0:
+                labels[prev_start+prev_video:start+prev_video] = prev_lbl
+            prev_start, prev_lbl = start, lbl
+        prev_video += start
+        # print("Next video", prev_video)
+    labels = labels[:prev_video]
 
-    labels = np.empty(gestures.shape[0], dtype='int32')
-    label_info = np.loadtxt(
-        pjoin(data_folder, "vid_{}_labels.txt".format(file_no)), dtype='int32')
-    prev_start, prev_lbl = 0, 0
-    for start, lbl in label_info:
-        if start != 0:
-            labels[prev_start:start] = prev_lbl
-        prev_start, prev_lbl = start, lbl
-    print(Counter(labels))
+    gestures = np.zeros((len(labels), 249))
+    prev_video = 0
+    for i in file_numbers:
+        if i < 100:
+            gestures_data = np.genfromtxt(
+                pjoin(data_folder, "vid_{}.csv".format(i)),
+                delimiter=',')
+        else:
+            file_no = i % 100
+            gestures_data = np.genfromtxt(
+                pjoin(data_folder, "random_{}.csv".format(file_no)),
+                delimiter=',')
+        data_len = gestures_data.shape[0]
+        gestures[prev_video:prev_video+data_len, :] = gestures_data
+        prev_video += data_len
 
     return gestures, labels
+
+
+# file_numbers = list(range(1, 21))
+# file_numbers.extend(list(range(101, 107)))
+# data_folder = pjoin("..", "Database", "MyDatabase")
+# g, l = load_my_dataset(file_numbers)
+# U, S, V = scipy.sparse.linalg.svds(g, k=248, which='LM')
+# indices = np.argsort(S)
+# indices_rev = indices[::-1]
+# np.savetxt(pjoin(data_folder, "svd_V.csv"), V[indices_rev, :], delimiter=",")
+# np.savetxt(pjoin(data_folder, "svd_S.csv"), S[indices_rev], delimiter=",")
 
 
 def load_LMDHG_from_file(file_no, data_folder=None):
@@ -143,8 +164,8 @@ def load_DHG_dataset(no_instances=None, data_folder=None, frame_length=150):
 
 
 def calculate_features(points):
+    """Calculate features based on SVD mapping."""
     features = np.matmul(points, mapping_t)
-    # features = points[:-1]
     return features
 
 
@@ -152,7 +173,7 @@ def calculate_old_features(points):
     """Obtain features from one frame."""
     # C = points[23, :]  # central point - the palm
     # wrist_vec = points[24, :] - C
-    C = points[0, :]
+    # C = points[0, :]
     wrist_vec = points[1, :]
     wrist_mag = np.sqrt(abs(wrist_vec.dot(wrist_vec)))
     # fingers_vec = points[[5, 9, 13, 17, 21], :] - C
@@ -184,10 +205,10 @@ def calculate_old_features(points):
 # points_of_interest = [0, 1, 6, 10, 14, 18, 22, 23, 24, 29, 33, 37, 41, 45]
 # DHG
 # points_of_interest = [0, 1, 5, 9, 13, 17, 21]
-points_of_interest = np.arange(0, 22)
+# points_of_interest = np.arange(0, 22)
 
 
-def calculate_old_features(pattern):
+def calculate_svm_features(pattern):
     """Obtain features from a set of frames."""
     features = np.zeros(57)
 

@@ -73,13 +73,14 @@ public class PageView : MonoBehaviour {
 
     private void OnDisable()
     {
+        if (feedback != null)
+            feedback.SetActive(false);
         presenter.Reset();
         ShowTextCursor(false);
         selection_start = null;
         selection_timer = 0f;
         trigger_active = false;
         text.text = "";
-        feedback.SetActive(false);
         if (selection_mode)
         {
             RemoveSelection();

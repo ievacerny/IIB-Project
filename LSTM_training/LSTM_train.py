@@ -3,35 +3,42 @@ import numpy as np
 import tensorflow as tf
 import time
 import matplotlib.pyplot as plt
-from collections import Counter
+from collections import Counter  # noqa
 
 from prepare_inputs import (
     calculate_features,
     load_LMDHG_from_file,
     load_DHG_dataset,
     load_my_dataset,
-    set_mapping
+    set_mapping,
 )
 
 # ------------------------ PARAMETERS -----------------------------------------
 # Network parameters
-frame_step = 5  # Used to change the frame rate of the input
+frame_step = 8  # Used to change the frame rate of the input
 batch_size = 10
-learning_rate = 0.0005
-training_iters = 1000
+learning_rate = 0.001
+training_iters = 5000
 display_step = 50
 testing_iters = 50
-final_testing_iters = 500
+final_testing_iters = 2000
 # Dimensionality parameters
-n_frames = 8
+n_frames = 6
 n_dimension = 40
 n_output = 6
 n_hidden = 512  # Dimension of the hidden state
+delay = 3
 
+np.random.seed(7)
+# frame_step_opts = [3, 5, 8, 10]
+# learning_rate_opts = [0.01, 0.001, 0.0005, 0.0001, 0.00001, 0.000001]
+# n_frames_opts = [6]
+# delay_opts = [3]
 
 # ------------------------ SAVE MODEL -----------------------------------------
 # export_dir = 'model_{}'.format(int(time.time()))
-export_dir = "model_I-1000_LD-2_S-5_F-8"
+# export_dir = "hyperparameters3/"
+export_dir = "model_I-5000_L-0.001_Random"
 builder = tf.saved_model.builder.SavedModelBuilder(export_dir)
 
 
@@ -56,25 +63,19 @@ def load_LMDHG(training_prop):
     return training_data, testing_data
 
 
-def load_custom(training_prop):
+def load_custom(testing_prop):
     """Load and split my own data into training and testing data."""
-    all_gestures = []
-    all_labels = []
     file_numbers = list(range(1, 21))
     np.random.shuffle(file_numbers)
-    print(file_numbers)
-    for i in file_numbers:
-        new_gestures, new_labels = load_my_dataset(i)
-        all_gestures.append(new_gestures)
-        all_labels.append(new_labels)
-    training_data = (
-        np.concatenate(all_gestures[:int(training_prop*len(all_gestures))]),
-        np.concatenate(all_labels[:int(training_prop*len(all_gestures))])
-    )
-    testing_data = (
-        np.concatenate(all_gestures[int(training_prop*len(all_gestures)):]),
-        np.concatenate(all_labels[int(training_prop*len(all_gestures)):])
-    )
+    file_numbers.extend(list(range(101, 107)))
+
+    print("Training: ", file_numbers[int(testing_prop*len(file_numbers)):])
+    training_data = load_my_dataset(
+        file_numbers[int(testing_prop*len(file_numbers)):])
+    print("Testing: ", file_numbers[:int(testing_prop*len(file_numbers))])
+    testing_data = load_my_dataset(
+        file_numbers[:int(testing_prop*len(file_numbers))])
+
     return training_data, testing_data
 
 
@@ -99,8 +100,7 @@ def load_DHG(training_prop):
 
 # Load training data
 start_time = time.time()
-training_data, testing_data = load_custom(0.8)
-U, S, V = np.linalg.svd(training_data[0])
+training_data, testing_data = load_custom(0.2)
 print("Loaded training data in {} seconds".format(time.time() - start_time))
 
 
@@ -111,15 +111,19 @@ print("Loaded training data in {} seconds".format(time.time() - start_time))
 # for learning_rate, n_frames, n_dimension in option_sets:
 # for learning_rate in learning_rates:
 
-# tf.reset_default_graph()
-# hyper_string = "L-{0}_F-{1}_D-{2}_Gest-".format(
-#     learning_rate, n_frames, n_dimension)
+# for n_frames in n_frames_opts:
+#     for learning_rate in learning_rate_opts:
+#     # for frame_step in frame_step_opts:
+#         for delay in delay_opts:
 
-set_mapping(V[:n_dimension, :])
+# tf.reset_default_graph()
+# hyper_string = "F-{0}_S-{1}_DL-{2}_L-{3}_5000".format(
+#     n_frames, frame_step, delay, learning_rate)
+hyper_string = ""
+
+set_mapping(n_dimension)
 print(training_data[0].shape, testing_data[0].shape)
 np.random.seed(10)
-np.savetxt(export_dir+'/mapping.csv', V[:n_dimension, :],
-           delimiter=',', fmt='%f')
 
 
 # ------------------------ NETWORK DEFINITION --------------------------------
@@ -211,9 +215,9 @@ def get_data(generator, testing=False):
     # Labels
     onehot_label = np.zeros((1, n_output), dtype=float)
     labels = data[1][
-        window_start:window_start+n_frames:frame_step]
+        window_start:window_start+n_frames*frame_step:frame_step]
     # actual_label = Counter(labels).most_common(1)[0][0]
-    actual_label = labels[-2]
+    actual_label = labels[-1*delay]
     # actual_label = np.bincount(labels, minlength=n_output) / n_frames
     # actual_label = np.reshape(actual_label, [1, n_output])
     onehot_label[0, actual_label] = 1.0
@@ -333,7 +337,7 @@ def final_test(session, test_generator, save=False, writers=None, step=0):
         "FPR" + " ".join("{:>8.5f}".format(n) for n in fpr) + "\n"
     )
     if save:
-        with open(export_dir+"/test.txt", 'w+') as f:
+        with open(export_dir + hyper_string + "/test.txt", 'w+') as f:
             f.write(report_string)
     else:
         print(report_string)
@@ -347,7 +351,7 @@ def plot_graphs(accuracy_train, accuracy_test, loss, save=False):
     plt.ylabel("Loss")
     plt.xlabel("Epoch")
     if save:
-        plt.savefig(export_dir+"/loss.png")
+        plt.savefig(export_dir + hyper_string + "/loss.png")
     else:
         plt.show()
 
@@ -360,7 +364,7 @@ def plot_graphs(accuracy_train, accuracy_test, loss, save=False):
     plt.xlabel("Epoch")
     plt.gca().legend()
     if save:
-        plt.savefig(export_dir+"/accuracy.png")
+        plt.savefig(export_dir + hyper_string + "/accuracy.png")
     else:
         plt.show()
 
@@ -381,7 +385,7 @@ with tf.Session() as session:
     test_gen = get_window_start(True)
     # ------------------------ Logging
     writer = tf.summary.FileWriter(
-        export_dir+"/logs",
+        export_dir + hyper_string + "/logs",
         session.graph)
 
     while step < training_iters:

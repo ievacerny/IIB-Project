@@ -10,13 +10,12 @@ public class HandControl : MonoBehaviour
     public enum GRstate { NOTHING, ML, SELECTION_ACTIVATE, SELECTION_DEACTIVATE };
 
     #region Parameters
-    [SerializeField] private int frame_step = 5;
     [SerializeField] private bool record_data = false;
+    private readonly int frame_step = 8;
     private string file_path = "../Database/MyDatabase/data_";
     #endregion
     #region Private Attributes
     [SerializeField] private GRstate current_state = GRstate.NOTHING;
-    private int update_counter = 0;
     private TCPClient client;
     private bool connection_active = false;
     private LeapProvider provider;
@@ -48,8 +47,6 @@ public class HandControl : MonoBehaviour
 	
 	void Update()
     {
-        update_counter++;
-
         // Update page and page script references
         GameObject new_page = focus.GetActivePage();
         if (!GameObject.ReferenceEquals(new_page, current_page))
@@ -91,8 +88,8 @@ public class HandControl : MonoBehaviour
 
                 if (record_data)
                 {
-                    if (update_counter % frame_step == 0)
-                        RecordFrame();
+                    RecordFrame();
+                    return;
                 }
             }
         }
@@ -113,7 +110,7 @@ public class HandControl : MonoBehaviour
         }
 
         // Every n-th frame actually communicate with the server and update the gesture code
-        if (update_counter % frame_step == 0)
+        if (Time.frameCount % frame_step == 0)
         {
             SendGestureData();
             int gesture_code = ReadGestureCode();

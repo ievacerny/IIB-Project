@@ -1,16 +1,18 @@
+"""Test LSTM predictions on recorded data."""
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+# Used implicitly by projection='3d'
+from mpl_toolkits.mplot3d import Axes3D  # noqa
 import numpy as np
 from os.path import join as pjoin
 import sys
 import tensorflow as tf
 
 # ---------------------------- PARAMETERS -------------------------------------
-model_path = r"model_I-1000_LD-2_S-5_F-8"
+model_path = r"model_I-5000_L-0.001_Random"
 data_path = r"..\\Database\\MyDatabase\\"
-n_frames = 8
+n_frames = 6
 n_dimension = 40
-frame_step = 5
+frame_step = 8
 
 # ---------------------------- READ ARGUMENTS ---------------------------------
 if len(sys.argv) == 2:
@@ -22,26 +24,8 @@ else:
 # ---------------------------- LOAD DATA FILE ---------------------------------
 def load_data(vid_no=1):
     """Load gesture data from specified video."""
-    gestures = np.genfromtxt(pjoin(data_path, "vid_{}.csv".format(vid_no)),
+    gestures = np.genfromtxt(pjoin(data_path, "random_{}.csv".format(vid_no)),
                              delimiter=',')
-    # Wrist and finger tip positions
-    position_points_x = [i for i in range(0, 21, 3)]
-    position_points_y = [i+1 for i in range(0, 21, 3)]
-    position_points_z = [i+2 for i in range(0, 21, 3)]
-    # Bone beginning positions
-    position_points_x.extend([49+10*i for i in range(20)])
-    position_points_y.extend([50+10*i for i in range(20)])
-    position_points_z.extend([51+10*i for i in range(20)])
-    # Normalise data
-    non_zero_gestures_norm = np.copy(gestures)
-    non_zero_gestures_norm[:, position_points_x] = (
-        gestures[:, position_points_x] - gestures[:, :1])
-    non_zero_gestures_norm[:, position_points_y] = (
-        gestures[:, position_points_y] - gestures[:, 1:2])
-    non_zero_gestures_norm[:, position_points_z] = (
-        gestures[:, position_points_z] - gestures[:, 2:3])
-    gestures = non_zero_gestures_norm
-
     return gestures
 
 
@@ -66,18 +50,26 @@ def plot_hand(ax1, time_idx):
     """Plot the hand skeleton."""
     ax1.set_title("Hand position at frame {}".format(time_idx))
     frame = full_data[time_idx]
+    pos_x = frame[0]
+    pos_y = frame[1]
+    pos_z = frame[2]
+    frame[0:2] = 0
     ax1.set_xlim(-0.2, 0.4)
     ax1.set_ylim(-0.3, 0.3)
     ax1.set_zlim(-0.6, 0)
-    ax1.plot(frame[[0, 3]], frame[[1, 4]], frame[[2, 5]], ':', label="Wrist")
+    # TODO: something is wrong with the hand-wrist line.
+    ax1.plot(frame[[0, 3]] + pos_x,
+             frame[[1, 4]] + pos_y,
+             -1 * frame[[2, 5]] - pos_z,
+             ':', label="Wrist")
     for i in range(2, 7):
         ax1.plot(
             frame[[0, 49+40*(i-2), 59+40*(i-2), 69+40*(i-2), 79+40*(i-2),
-                   6+3*(i-2)]],
+                   6+3*(i-2)]] + pos_x,
             frame[[0, 50+40*(i-2), 60+40*(i-2), 70+40*(i-2), 80+40*(i-2),
-                   7+3*(i-2)]],
-            frame[[0, 51+40*(i-2), 61+40*(i-2), 71+40*(i-2), 81+40*(i-2),
-                   8+3*(i-2)]],
+                   7+3*(i-2)]] + pos_y,
+            -1 * frame[[0, 51+40*(i-2), 61+40*(i-2), 71+40*(i-2), 81+40*(i-2),
+                        8+3*(i-2)]] - pos_z,
             label="Finger {}".format(i))
     plt.legend()
 
@@ -112,11 +104,11 @@ def on_key(event):
     # Plot hand
     elev, azim = ax1.elev, ax1.azim
     event.canvas.figure.clear()
-    ax1 = event.canvas.figure.add_subplot(2, 1, 1, projection='3d')
+    ax1 = event.canvas.figure.add_subplot(1, 2, 1, projection='3d')
     ax1.view_init(elev=elev, azim=azim)
     plot_hand(ax1, time_idx)
     # Plot predictions
-    ax2 = event.canvas.figure.add_subplot(2, 1, 2)
+    ax2 = event.canvas.figure.add_subplot(1, 2, 2)
     plot_softmax(ax2, time_idx)
     event.canvas.draw()
 
@@ -126,8 +118,8 @@ def on_key(event):
 # Load and prep data
 full_data = load_data(vid_no)
 full_data = full_data[::frame_step]
-mapping = np.loadtxt(model_path+'/mapping.csv', dtype='float', delimiter=',')
-mapping_t = mapping.T
+mapping = np.loadtxt(data_path+'/svd_V.csv', dtype='float', delimiter=',')
+mapping_t = mapping[:n_dimension, :].T
 slider = slide_window(full_data)
 next(slider)
 predictions = np.zeros((len(full_data), 6))
@@ -155,9 +147,9 @@ with tf.Session() as session:
 time_idx = 0
 fig = plt.figure()
 fig.canvas.mpl_connect('key_press_event', on_key)
-ax1 = fig.add_subplot(2, 1, 1, projection='3d')
+ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 ax1.view_init(elev=105, azim=-89.5)
 plot_hand(ax1, time_idx)
-ax2 = fig.add_subplot(2, 1, 2)
+ax2 = fig.add_subplot(1, 2, 2)
 plot_softmax(ax2, time_idx)
 plt.show()
