@@ -1,4 +1,6 @@
-from mpl_toolkits.mplot3d import Axes3D
+"""Visualise data recording."""
+# Used implicitly by projection='3d'
+from mpl_toolkits.mplot3d import Axes3D  # noqa
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
@@ -12,7 +14,7 @@ else:
 
 # ------------- LOAD DATA
 frames = []
-with open("../Database/MyDatabase/vid_{}.csv".format(i), 'r') as csvf:
+with open("../Database/MyDatabase/random_{}.csv".format(i), 'r') as csvf:
     reader = csv.reader(csvf)
     for row in reader:
         points = []
@@ -27,11 +29,13 @@ with open("../Database/MyDatabase/vid_{}.csv".format(i), 'r') as csvf:
         frames.append(points)
 
 frames = np.array(frames)
+frames[:, 1:, :] = frames[:, 1:, :] + frames[:, :1, :]
 print(frames.shape)
 
 
 # -------------- EVENT HANDLERS
 def onclick(event):
+    """Change frames via arrow clicks."""
     global fno
     if event.key == "left":
         if fno > 0:
@@ -57,6 +61,7 @@ def onclick(event):
 
 # ---------------- MAIN CODE
 def plot_hand(ax, fno):
+    """Plot hand from data."""
     ax.set_title(str(fno))
     frame = frames[fno, :, :]
     ax.set_xlim(-0.2, 0.4)

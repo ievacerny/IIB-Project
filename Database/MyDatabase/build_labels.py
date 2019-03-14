@@ -1,5 +1,19 @@
 import numpy as np
 
+random = np.empty(6, dtype='object')
+
+random[0] = [(0, 0), (4887, -1)]  # Ieva
+random[1] = [(0, 0), (4188, -1)]  # Steve
+random[2] = [(0, 0), (3079, -1)]  # Fin
+random[3] = [(0, 0), (2857, -1)]  # Monica
+random[4] = [(0, 0), (4664, -1)]  # Static hand (Ieva)
+random[5] = [(0, 0), (1000, -1)]  # Zeros
+
+for i in range(len(random)):
+    with open("random_{}_labels.txt".format(i+1), 'w') as f:
+        np.savetxt(f, random[i], fmt="%u")
+
+
 vid = np.empty(20, dtype='object')
 
 # Ieva
