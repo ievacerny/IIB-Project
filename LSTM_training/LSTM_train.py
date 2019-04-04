@@ -4,6 +4,7 @@ import tensorflow as tf
 import time
 import matplotlib.pyplot as plt
 from os.path import join as pjoin
+import scipy
 from collections import Counter  # noqa
 
 from prepare_inputs import (
@@ -15,7 +16,52 @@ from prepare_inputs import (
 )
 
 LOGGING = True
+
+
 # ------------------------ PARAMETERS -----------------------------------------
+class Config():
+    """Container of all needed parameters."""
+
+    def __init__(
+        self,
+        # Network parameters
+        frame_step=1,
+        batch_size=10,
+        learning_rate=0.001,
+        training_iters=5000,
+        display_step=50,
+        testing_iters=50,
+        final_testing_iters=2000,
+        # Dimensionality parameters
+        n_frames=6,
+        n_dimension=40,
+        n_output=6,
+        n_hidden=512,  # Dimension of the hidden state
+        delay=3,
+    ):
+        """Initialise the parameters."""
+        self.frame_step = frame_step
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.training_iters = training_iters
+        self.display_step = display_step
+        self.testing_iters = testing_iters
+        self.final_testing_iters = final_testing_iters
+        self.n_frames = n_frames
+        self.n_dimension = n_dimension
+        self.n_output = n_output
+        self.n_hidden = n_hidden
+        self.delay = delay
+        self.validate_values()
+
+    def validate_values(self):
+        """Check if parameter values are valid."""
+        if self.frame_step == 0:
+            raise Exception("frame_step can't be zero.")
+        if self.n_frames == 0:
+            raise Exception("n_frames can't be zero.")
+
+
 # Network parameters
 frame_step = 8  # Used to change the frame rate of the input
 batch_size = 10
@@ -27,7 +73,6 @@ final_testing_iters = 2000
 # Dimensionality parameters
 n_frames = 6
 n_dimension = 40
-# TODO: Forcefully check that n_frames and frame_step is not zero
 n_output = 6
 n_hidden = 512  # Dimension of the hidden state
 delay = 3
@@ -48,6 +93,28 @@ np.random.seed(7)
 def _log(*args):
     if LOGGING:
         print(args)
+
+
+# ---------------------- SVD MAP CALCULATION ----------------------------------
+def calculateMapping(data, data_folder=None, code_test=False):
+    """Do SVD on specified data and save it to file.
+
+    Only need to do this once for all of data. Then simply load it from file.
+    """
+    if data_folder is None:
+        data_folder = pjoin("..", "Database", "MyDatabase")
+
+    # Need to use a sparse algorithm because of memory limitations
+    U, S, V = scipy.sparse.linalg.svds(data, k=min(data.shape)-1, which='LM')
+    # Sparse algorithm doesn't sort the singular values, need to sort manually
+    indices = np.argsort(S)[::-1]
+
+    np.savetxt(pjoin(data_folder, "svd_V.csv"), V[indices, :], delimiter=",")
+    np.savetxt(pjoin(data_folder, "svd_S.csv"), S[indices], delimiter=",")
+
+    # If code testing return for inspection
+    if code_test:
+        return U[:, indices], S[indices], V[indices, :]
 
 
 # ------------------- DATA LOADING FUNCTIONS ----------------------------------
@@ -92,41 +159,53 @@ def loadFiles(file_numbers, data_folder=None):
     return gestures, labels
 
 
-def loadData(testing_prop, number_of_vids=None, seed=None, data_folder=None):
+def loadData(testing_prop, number_of_vids=None, data_folder=None):
     """Load and split my own data into training and testing data."""
     if number_of_vids is None:
         number_of_vids = (21, 107)
-    if seed is not None:
-        np.random.seed(seed)
-
-    # NOTE: Testing proportion has to be big enough to allow at least one video
 
     file_numbers = list(range(1, number_of_vids[0]))
     np.random.shuffle(file_numbers)
     file_numbers.extend(list(range(101, number_of_vids[1])))
+    no_testing = int(round(testing_prop*len(file_numbers)))
 
-    _log("Training: ", file_numbers[round(testing_prop*len(file_numbers)):])
-    training_data = loadFiles(
-        file_numbers[round(testing_prop*len(file_numbers)):],
-        data_folder=data_folder)
-    _log("Testing: ", file_numbers[:round(testing_prop*len(file_numbers))])
-    testing_data = loadFiles(
-        file_numbers[:round(testing_prop*len(file_numbers))],
-        data_folder=data_folder)
+    if no_testing == 0:
+        raise Exception("No videos for testing.")
+    if no_testing == len(file_numbers):
+        raise Exception("No videos for training.")
+
+    training_data = loadFiles(file_numbers[no_testing:],
+                              data_folder=data_folder)
+    testing_data = loadFiles(file_numbers[:no_testing],
+                             data_folder=data_folder)
+
+    _log("Training: ", file_numbers[no_testing:])
+    _log("Testing: ", file_numbers[:no_testing])
 
     return training_data, testing_data
 
 
+def loadMapping(config, data_folder=None):
+    """Read mapping from file and save it for feature calculations."""
+    if data_folder is None:
+        data_folder = pjoin("..", "Database", "MyDatabase")
+
+    mapping = np.genfromtxt(pjoin(data_folder, "svd_V.csv"), delimiter=',')
+    return mapping[:config.n_dimension, :].T
+
+
 # ------------ INPUT AND OUTPUT PREPARATION FUNCTIONS -------------------------
-def get_window_start(testing=False):
+def getWindowStart(config, testing=False):
     """Generate exhaustively random window_start positions. And repeats."""
     if testing:
         data = testing_data
     else:
         data = training_data
     start_positions = np.arange(
-        # Range not inclusive - needed_frames - gaps in between frames
-        (len(data[0]) + 1) - n_frames - (n_frames-1)*(frame_step-1))
+        (len(data[0]) + 1) -  # Range not inclusive (hence +1)
+        config.n_frames -  # Number of needed frames
+        (config.n_frames-1)*(config.frame_step-1)  # Gaps between frames
+    )
     if len(start_positions) == 0:
         raise Exception("No starting positions in the generator.")
     epoch = 0
@@ -162,6 +241,13 @@ def get_data(generator, testing=False):
     onehot_label[0, actual_label] = 1.0
 
     return np.array(features), onehot_label
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     print("I'm here")
@@ -405,8 +491,8 @@ if __name__ == '__main__':
         # Initialise
         session.run(init)
         step, acc_total, loss_total = 0, 0, 0
-        train_gen = get_window_start()
-        test_gen = get_window_start(True)
+        train_gen = getWindowStart()
+        test_gen = getWindowStart(True)
         # ------------------------ Logging
         writer = tf.summary.FileWriter(
             export_dir + hyper_string + "/logs",

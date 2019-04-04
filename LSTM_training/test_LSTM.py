@@ -89,10 +89,11 @@ class TestLoadData(unittest.TestCase):
         ]
         for testing_prop, exp_training_len, exp_testing_len in params:
             with self.subTest(testing_prop=testing_prop):
+                # Given
+                np.random.seed(self.seed)
                 # When
                 training, testing = LSTM_train.loadData(
-                    testing_prop, self.number_of_vids, self.seed,
-                    self.data_folder)
+                    testing_prop, self.number_of_vids, self.data_folder)
                 # Then
                 self.assertEqual(2, len(training))
                 self.assertEqual(exp_training_len, len(training[0]))
@@ -104,9 +105,29 @@ class TestLoadData(unittest.TestCase):
                 self.assertListEqual(
                     self.labels[:exp_testing_len], testing[1].tolist())
 
+    def test_load_data_exception(self):
+        """Test when there are no testing or no training videos."""
+        params = [  # testing_prop, msg
+            (0, "No videos for testing."),
+            (0.1, "No videos for testing."),
+            (0.95, "No videos for training."),
+            (1, "No videos for training."),
+        ]
+        for testing_prop, msg in params:
+            with self.subTest(testing_prop=testing_prop, msg=msg):
+                # Given
+                np.random.seed(self.seed)
+                # When & Then
+                with self.assertRaisesRegex(Exception, msg):
+                    training, testing = LSTM_train.loadData(
+                        testing_prop, self.number_of_vids, self.data_folder)
 
-class LoadGetWindowStart(unittest.TestCase):
-    """Test getWindowStart generator that randomises the input data."""
+
+class TestGetWindowStart(unittest.TestCase):
+    """Test getWindowStart generator that randomises the input data.
+
+    Dependency: loadData
+    """
 
     def setUp(self):
         """Set up all the tests."""
@@ -114,9 +135,10 @@ class LoadGetWindowStart(unittest.TestCase):
         number_of_vids = (3+1, 102+1)
         data_folder = pjoin("..", "Database", "TestDatabase")
         testing_prop = 0.2
-        training_data, testing_data = LSTM_train.loadData(
-            testing_prop, number_of_vids, self.seed, data_folder)
-        LSTM_train.training_data = training_data
+        np.random.seed(self.seed)
+        training, testing = LSTM_train.loadData(
+            testing_prop, number_of_vids, data_folder)
+        LSTM_train.training_data = training
 
     def test_get_window_start_success(self):
         """Test if window_start positions are generated correctly."""
@@ -129,11 +151,11 @@ class LoadGetWindowStart(unittest.TestCase):
         for n_frames, frame_step, expected_values in params:
             with self.subTest(n_frames=n_frames, frame_step=frame_step):
                 # Given
-                LSTM_train.n_frames = n_frames
-                LSTM_train.frame_step = frame_step
+                config = LSTM_train.Config(
+                    n_frames=n_frames, frame_step=frame_step)
                 np.random.seed(self.seed)
                 # When
-                train_gen = LSTM_train.get_window_start()
+                train_gen = LSTM_train.getWindowStart(config)
                 values = []
                 for i in range(len(expected_values)):
                     values.append(next(train_gen))
@@ -149,11 +171,11 @@ class LoadGetWindowStart(unittest.TestCase):
         for n_frames, frame_step, description in params:
             with self.subTest(msg=description):
                 # Given
-                LSTM_train.n_frames = n_frames
-                LSTM_train.frame_step = frame_step
+                config = LSTM_train.Config(
+                    n_frames=n_frames, frame_step=frame_step)
                 np.random.seed(self.seed)
                 # When & Then
-                train_gen = LSTM_train.get_window_start()
+                train_gen = LSTM_train.getWindowStart(config)
                 with self.assertRaisesRegex(
                         Exception,
                         "No starting positions in the generator."):
@@ -163,33 +185,84 @@ class LoadGetWindowStart(unittest.TestCase):
         """Test if fails gracefully in case of no data."""
         # Given
         LSTM_train.training_data = ([], [])
-        LSTM_train.n_frames = 1
-        LSTM_train.frame_step = 1
+        config = LSTM_train.Config(n_frames=1, frame_step=1)
         np.random.seed(self.seed)
         # When & Then
-        train_gen = LSTM_train.get_window_start()
+        train_gen = LSTM_train.getWindowStart(config)
         with self.assertRaisesRegex(
                 Exception,
                 "No starting positions in the generator."):
             next(train_gen)
 
     def test_get_window_start_repeat(self):
-        """Test if get_window_start goes through data repeatedly."""
+        """Test if getWindowStart goes through data repeatedly."""
         # Given
-        LSTM_train.n_frames = 2
-        LSTM_train.frame_step = 5
+        config = LSTM_train.Config(n_frames=2, frame_step=5)
         expected_values = [
             6, 2, 7, 4, 5, 0, 3, 1, 8,
             6, 3, 5, 1, 0, 2, 8, 7, 4
         ]
         np.random.seed(self.seed)
         # When
-        train_gen = LSTM_train.get_window_start()
+        train_gen = LSTM_train.getWindowStart(config)
         values = []
         for i in range(len(expected_values)):
             values.append(next(train_gen))
         # Then
         self.assertListEqual(expected_values, values)
+
+
+class TestCalculateMapping(unittest.TestCase):
+    """Test whether the SVD is done correctly."""
+
+    def test_calculate_mapping(self):
+        """Test to see if SVD and value sorting works as expected."""
+        # Given
+        data_folder = pjoin("..", "Database", "TestDatabase")
+        data = np.array([
+            [1.1, 2.2, 3.3, 4.4, 5.5],
+            [1.5, 2.6, 3.7, 4.8, 5.9],
+            [2.3, 3.4, 4.5, 5.6, 6.7],
+            [3.6, 4.7, 5.8, 6.9, 7.1],
+            [4.5, 5.7, 6.9, 7.2, 8.3],
+            [5.8, 7.3, 9.2, 11.6, 13.8]
+        ], dtype=float)
+        expected_S = np.array([33.7448, 2.3277, 0.6587, 0.4985, 0.0207])
+        # When
+        U, S, V = LSTM_train.calculateMapping(
+            data, data_folder, code_test=True)
+        # Then
+        self.assertTupleEqual((6, 4), U.shape)
+        self.assertTupleEqual((4, 5), V.shape)
+        # Only k=min(5, 6)-1=4 values are calculated
+        np.testing.assert_allclose(S, expected_S[:4], atol=0.001)
+        data_recreated = np.dot(U * S, V)  # Dot transposes V
+        np.testing.assert_allclose(data, data_recreated, atol=0.05)
+
+
+class TestLoadMapping(unittest.TestCase):
+    """Test to see if mapping is loaded correctly from a file.
+
+    Dependency: calculateMapping (if files don't exist yet)
+    """
+
+    def test_load_mapping(self):
+        """Test if mapping loads correctly depending on input dimension."""
+        # Given
+        data_folder = pjoin("..", "Database", "TestDatabase")
+        params = [1, 2, 3, 4]  # n_dimension
+        for dim in params:
+            with self.subTest(dimension=dim):
+                config = LSTM_train.Config(n_dimension=dim)
+                # When
+                mapping_t = LSTM_train.loadMapping(config, data_folder)
+                # Then
+                self.assertTupleEqual((5, dim), mapping_t.shape)
+
+
+class TestGetData(unittest.TestCase):
+
+    pass  # TODO: next thing to test
 
 
 # -----------------------------------------------------------------------------
