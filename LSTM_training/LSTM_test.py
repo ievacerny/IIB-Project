@@ -6,6 +6,7 @@ import numpy as np
 from os.path import join as pjoin
 import sys
 import tensorflow as tf
+print(tf.VERSION)
 
 # ---------------------------- PARAMETERS -------------------------------------
 model_path = r"model_I-5000_L-0.001_Random"
@@ -24,7 +25,7 @@ else:
 # ---------------------------- LOAD DATA FILE ---------------------------------
 def load_data(vid_no=1):
     """Load gesture data from specified video."""
-    gestures = np.genfromtxt(pjoin(data_path, "random_{}.csv".format(vid_no)),
+    gestures = np.genfromtxt(pjoin(data_path, "vid_{}.csv".format(vid_no)),
                              delimiter=',')
     return gestures
 

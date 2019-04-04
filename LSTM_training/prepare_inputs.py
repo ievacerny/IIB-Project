@@ -42,49 +42,7 @@ def set_mapping(n_dimension, data_folder=None):
     mapping_t = mapping[:n_dimension, :].T
 
 
-def load_my_dataset(file_numbers, data_folder=None):
-    """Load coordinates and labels from data file of specified number."""
-    if data_folder is None:
-        data_folder = pjoin("..", "Database", "MyDatabase")
-    labels = np.empty(60000, dtype='int32')
-    prev_video = 0
-    for i in file_numbers:
-        if i < 100:
-            label_info = np.loadtxt(
-                pjoin(data_folder, "vid_{}_labels.txt".format(i)),
-                dtype='int32')
-        else:
-            file_no = i % 100
-            label_info = np.loadtxt(
-                pjoin(data_folder, "random_{}_labels.txt".format(file_no)),
-                dtype='int32')
-        prev_start, prev_lbl = 0, 0
-        for start, lbl in label_info:
-            # print(start, "->", start+prev_video, " : ", lbl)
-            if start != 0:
-                labels[prev_start+prev_video:start+prev_video] = prev_lbl
-            prev_start, prev_lbl = start, lbl
-        prev_video += start
-        # print("Next video", prev_video)
-    labels = labels[:prev_video]
 
-    gestures = np.zeros((len(labels), 249))
-    prev_video = 0
-    for i in file_numbers:
-        if i < 100:
-            gestures_data = np.genfromtxt(
-                pjoin(data_folder, "vid_{}.csv".format(i)),
-                delimiter=',')
-        else:
-            file_no = i % 100
-            gestures_data = np.genfromtxt(
-                pjoin(data_folder, "random_{}.csv".format(file_no)),
-                delimiter=',')
-        data_len = gestures_data.shape[0]
-        gestures[prev_video:prev_video+data_len, :] = gestures_data
-        prev_video += data_len
-
-    return gestures, labels
 
 
 # file_numbers = list(range(1, 21))

@@ -184,7 +184,9 @@ public class HandControl : MonoBehaviour
 
         try
         {
+            float start = Time.realtimeSinceStartup;
             message = client.ReadMessage();
+            Debug.Log(Time.realtimeSinceStartup - start);
         }
         catch (Exception e)
         {
