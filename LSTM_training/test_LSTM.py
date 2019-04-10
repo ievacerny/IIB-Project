@@ -132,12 +132,10 @@ class TestGetWindowStart(unittest.TestCase):
     def setUp(self):
         """Set up all the tests."""
         self.seed = 3
-        number_of_vids = (3+1, 102+1)
-        data_folder = pjoin("..", "Database", "TestDatabase")
-        testing_prop = 0.2
         np.random.seed(self.seed)
         training, testing = LSTM_train.loadData(
-            testing_prop, number_of_vids, data_folder)
+            0.2, (3+1, 102+1),
+            pjoin("..", "Database", "TestDatabase"))
         LSTM_train.training_data = training
 
     def test_get_window_start_success(self):
@@ -235,7 +233,7 @@ class TestCalculateMapping(unittest.TestCase):
         self.assertTupleEqual((6, 4), U.shape)
         self.assertTupleEqual((4, 5), V.shape)
         # Only k=min(5, 6)-1=4 values are calculated
-        np.testing.assert_allclose(S, expected_S[:4], atol=0.001)
+        np.testing.assert_allclose(expected_S[:4], S, atol=0.001)
         data_recreated = np.dot(U * S, V)  # Dot transposes V
         np.testing.assert_allclose(data, data_recreated, atol=0.05)
 
@@ -261,8 +259,135 @@ class TestLoadMapping(unittest.TestCase):
 
 
 class TestGetData(unittest.TestCase):
+    """Test if feature calculations and label assignments are correct.
 
-    pass  # TODO: next thing to test
+    Dependency: getWindowStart
+    """
+
+    def setUp(self):
+        """Set up all the tests."""
+        self.seed = 3
+        # Set up the data for testing
+        np.random.seed(self.seed)
+        training, testing = LSTM_train.loadData(
+            0.2, (3+1, 102+1),
+            pjoin("..", "Database", "TestDatabase"))
+        LSTM_train.training_data = training
+        # Set up the config
+        self.n_output = 103
+        self.config = LSTM_train.Config(
+            n_frames=3, frame_step=2, n_output=self.n_output,
+            mapping=self._build_mapping((249, 2)))
+
+    def test_get_data_check_mapping(self):
+        """Test that mapping frames to features works correctly."""
+        params = [  # mapping_shape, expected_data_shape
+            ((249, 1), (3, 1)),
+            ((249, 3), (3, 3)),
+            ((249, 40), (3, 40)),
+        ]
+        for mapping_shape, expected_data_shape in params:
+            with self.subTest(mapping_shape=mapping_shape,
+                              expected_data_shape=expected_data_shape):
+                # Given
+                self.config.mapping = self._build_mapping(mapping_shape)
+                np.random.seed(self.seed)
+                train_gen = LSTM_train.getWindowStart(self.config)
+                # When
+                data, labels = LSTM_train.getData(self.config, train_gen)
+                # Then
+                expected_data = np.array([
+                    [3]*mapping_shape[1],
+                    [101]*mapping_shape[1],
+                    [0]*mapping_shape[1],
+                ])
+                self.assertTupleEqual(expected_data_shape, data.shape)
+                np.testing.assert_allclose(expected_data, data)
+
+    def test_get_data_label_delay(self):
+        """Test that delay label assignment works correctly."""
+        self.config.label_type = 'delay'
+        params = [  # delay, expected_label
+            (1, 0),
+            (2, 101),
+            (3, 3),
+        ]
+        for delay, expected_label in params:
+            with self.subTest(delay=delay):
+                # Given
+                self.config.delay = delay
+                np.random.seed(self.seed)
+                train_gen = LSTM_train.getWindowStart(self.config)
+                # When
+                data, labels = LSTM_train.getData(self.config, train_gen)
+                # Then
+                expected_label_vec = np.zeros((1, self.n_output), dtype=float)
+                expected_label_vec[0, expected_label] = 1
+                np.testing.assert_allclose(
+                    expected_label_vec, labels,
+                    err_msg="Label {} instead of expected {}"
+                            .format(np.argmax(labels), expected_label_vec),
+                    verbose=False)
+
+    def test_get_data_label_majority(self):
+        """Test that majority label assignment works correctly."""
+        self.config.label_type = 'majority'
+        params = [  # data_iters, expected_label
+            (2, 101),
+            (3, 3),
+            (5, 0),
+            (6, 101),
+            (8, 1),
+        ]
+        for iters, expected_label in params:
+            with self.subTest(data_iters=iters):
+                # Given
+                np.random.seed(self.seed)
+                train_gen = LSTM_train.getWindowStart(self.config)
+                # When
+                for i in range(iters):
+                    data, labels = LSTM_train.getData(self.config, train_gen)
+                # Then
+                expected_label_vec = np.zeros((1, self.n_output), dtype=float)
+                expected_label_vec[0, expected_label] = 1
+                np.testing.assert_allclose(
+                    expected_label_vec, labels,
+                    err_msg="Label {} instead of expected {}"
+                            .format(np.argmax(labels), expected_label_vec),
+                    verbose=False)
+
+    def test_get_data_label_bincounts(self):
+        """Test that bincount label assignment works correctly."""
+        self.config.label_type = 'bincount'
+        params = [  # data_iters, expected_label_dict
+            (1, {0: 1/3, 3: 1/3, 101: 1/3}),
+            (2, {3: 1/3, 101: 2/3}),
+            (3, {1: 1/3, 3: 2/3}),
+            (5, {0: 2/3, 102: 1/3}),
+        ]
+        for iters, expected_label_dict in params:
+            with self.subTest(data_iters=iters):
+                # Given
+                np.random.seed(self.seed)
+                train_gen = LSTM_train.getWindowStart(self.config)
+                # When
+                for i in range(iters):
+                    data, labels = LSTM_train.getData(self.config, train_gen)
+                # Then
+                expected_label_vec = self._build_vec_from_dict(
+                    expected_label_dict)
+                np.testing.assert_allclose(expected_label_vec, labels)
+
+    def _build_mapping(self, shape):
+        mapping = np.zeros(shape, dtype=float)
+        mapping[0, :] = 1
+        return mapping
+
+    def _build_vec_from_dict(self, dict):
+        vec = np.zeros((1, self.n_output), dtype=float)
+        for key, value in dict.items():
+            vec[0, key] = value
+        return vec
 
 
 # -----------------------------------------------------------------------------

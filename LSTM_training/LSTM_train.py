@@ -38,6 +38,8 @@ class Config():
         n_output=6,
         n_hidden=512,  # Dimension of the hidden state
         delay=3,
+        mapping=None,
+        label_type='delay'
     ):
         """Initialise the parameters."""
         self.frame_step = frame_step
@@ -52,6 +54,8 @@ class Config():
         self.n_output = n_output
         self.n_hidden = n_hidden
         self.delay = delay
+        self.mapping = mapping
+        self.label_type = label_type
         self.validate_values()
 
     def validate_values(self):
@@ -60,6 +64,9 @@ class Config():
             raise Exception("frame_step can't be zero.")
         if self.n_frames == 0:
             raise Exception("n_frames can't be zero.")
+        if self.label_type not in ['delay', 'majority', 'bincount']:
+            raise Exception("Not a valid label_type. Choose from: " +
+                            "'delay', 'majority', 'bincount'")
 
 
 # Network parameters
@@ -217,30 +224,37 @@ def getWindowStart(config, testing=False):
         _log("EPOCH {}. Done with all videos".format(epoch))
 
 
-def get_data(generator, testing=False):
+def getData(config, generator, testing=False):
     """Get the input and label arrays for a window starting at window_start."""
     if testing:
         data = testing_data
     else:
         data = training_data
-    # Input
     window_start = next(generator)
+    # Input
     frames = data[0][
-        window_start:window_start+n_frames*frame_step:frame_step]
-    features = []
-    for frame in frames:
-        features.append(calculate_features(frame))
+        window_start:
+        window_start+config.n_frames*config.frame_step:
+        config.frame_step]
+    features = np.matmul(frames, config.mapping)
     # Labels
-    onehot_label = np.zeros((1, n_output), dtype=float)
-    labels = data[1][
-        window_start:window_start+n_frames*frame_step:frame_step]
-    # actual_label = Counter(labels).most_common(1)[0][0]
-    actual_label = labels[-1*delay]
-    # actual_label = np.bincount(labels, minlength=n_output) / n_frames
-    # actual_label = np.reshape(actual_label, [1, n_output])
-    onehot_label[0, actual_label] = 1.0
+    frame_labels = data[1][
+        window_start:
+        window_start+config.n_frames*config.frame_step:
+        config.frame_step]
+    if config.label_type == "bincount":
+        label = (np.bincount(frame_labels, minlength=config.n_output) /
+                 config.n_frames)
+        label = np.reshape(label, [1, config.n_output])
+    else:
+        label = np.zeros((1, config.n_output), dtype=float)
+        if config.label_type == 'delay':
+            actual_label = frame_labels[-1*config.delay]
+        else:
+            actual_label = Counter(frame_labels).most_common(1)[0][0]
+        label[0, actual_label] = 1.0
 
-    return np.array(features), onehot_label
+    return features, label
 
 
 
@@ -341,7 +355,7 @@ if __name__ == '__main__':
         input_batch = np.zeros((batch_size, n_frames, n_dimension))
         output_batch = np.zeros((batch_size, n_output))
         for i in range(batch_size):
-            input_batch[i, :, :], output_batch[i, :] = get_data(train_generator)
+            input_batch[i, :, :], output_batch[i, :] = getData(train_generator)
 
         if (it+1) % display_step == 0:
             merge = tf.summary.merge_all()
@@ -366,7 +380,7 @@ if __name__ == '__main__':
         """Do testing after one epoch."""
         accuracy_testing = 0
         for t in range(testing_iters):
-            features, onehot_label = get_data(test_generator, testing=True)
+            features, onehot_label = getData(test_generator, testing=True)
             features = np.reshape(features, [-1, n_frames, n_dimension])
             onehot_pred, acc = session.run(
                 [pred, accuracy],
@@ -384,7 +398,7 @@ if __name__ == '__main__':
         gesture_counts = np.zeros(n_output, dtype='int32')
         for t in range(final_testing_iters):
             # Predict
-            features, onehot_label = get_data(test_generator, testing=True)
+            features, onehot_label = getData(test_generator, testing=True)
             features = np.reshape(features, [-1, n_frames, n_dimension])
             onehot_pred, acc = session.run(
                 [pred, accuracy],
