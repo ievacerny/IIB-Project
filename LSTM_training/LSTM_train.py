@@ -28,13 +28,13 @@ class Config():
         training_iters=5000,
         display_step=50,
         testing_iters=50,
-        final_testing_iters=500,
+        final_testing_iters=50,  # Number of iterations per gesture
         # Dimensionality parameters
-        n_frames=6,
-        n_dimension=40,
+        n_frames=40,
+        n_dimension=45,
         n_output=15,
         n_hidden=512,  # Dimension of the hidden state
-        delay=3,
+        delay=13,
         mapping=None,
         label_type='delay',
         export_dir='model_{}'.format(int(time.time())),
@@ -57,6 +57,7 @@ class Config():
         self.label_type = label_type
         self.export_dir = export_dir
         self.validate_values()
+        self.save_model = save_model
         if save_model:
             self.builder = tf.saved_model.builder.SavedModelBuilder(export_dir)
 
@@ -257,7 +258,7 @@ def trainOneStep(session, train_generator, acc_total, loss_total, writer,
         writer.add_summary(summary, it)
     # Otherwise, just do the training step
     else:
-        _, acc, loss, onehot_pred = session.run(
+        _, acc, loss, network_output = session.run(
             [network.optimizer, network.accuracy, network.cost, network.pred],
             feed_dict={network.x: input_batch, network.y: output_batch})
     # Track total loss and accuracy
@@ -289,18 +290,32 @@ def final_test(session, test_generator, config, network, save=False,
     # Rows: TP, TN, FP, FN
     rec_numbers = np.zeros((4, config.n_output), dtype='int32')
     gesture_counts = np.zeros(config.n_output, dtype='int32')
-    for t in range(config.final_testing_iters):
-        # Predict
+    confusion_matrix = np.zeros((config.n_output, config.n_output))
+    total_iterations = 0
+    while True:
+        # Get data
         features, onehot_label = getData(config, test_generator, testing=True)
+        # Check if need more predictions for this gesture
+        actual_label = np.argmax(onehot_label, axis=1)[0]
+        if (actual_label != 0 and
+                gesture_counts[actual_label] >= config.final_testing_iters):
+            print(gesture_counts)
+            if sum(gesture_counts[1:]) == (
+                    config.final_testing_iters*(config.n_output-1)):
+                break
+            else:
+                continue
+        total_iterations += 1
+        # Predict
         features = np.reshape(features,
                               [-1, config.n_frames, config.n_dimension])
         onehot_pred, acc = session.run(
             [network.pred, network.accuracy],
             feed_dict={network.x: features, network.y: onehot_label})
         # Get labels
-        actual_label = np.argmax(onehot_label, axis=1)[0]
         pred_label = tf.argmax(onehot_pred, 1).eval()[0]
         # Update recognition numbers and gesture counts
+        confusion_matrix[actual_label, pred_label] += 1
         gesture_counts[actual_label] += 1
         if actual_label == pred_label:
             rec_numbers[0, actual_label] += 1
@@ -310,11 +325,11 @@ def final_test(session, test_generator, config, network, save=False,
             rec_numbers[2, pred_label] += 1
         accuracy_testing += acc
     # Calculate true negatives
-    rec_numbers[1, :] = config.final_testing_iters - np.sum(
+    rec_numbers[1, :] = total_iterations - np.sum(
         rec_numbers[[0, 2, 3], :], axis=0)
 
     # Calculate recognition rate, TPR and FPR
-    rr = (rec_numbers[0, :] + rec_numbers[1, :]) / config.final_testing_iters
+    rr = (rec_numbers[0, :] + rec_numbers[1, :]) / (total_iterations)
     tpr = rec_numbers[0, :] / (rec_numbers[0, :] + rec_numbers[3, :])
     fpr = rec_numbers[2, :] / (rec_numbers[1, :] + rec_numbers[2, :])
 
@@ -339,8 +354,9 @@ def final_test(session, test_generator, config, network, save=False,
 
     # Report
     report_string = (
-        "---------- Testing accuracy {}\n".format(accuracy_testing/final_testing_iters) +  # noqa
-        "   " + " ".join("{:>8}".format(n) for n in np.arange(0, n_output)) + "\n"  # noqa
+        "---------- Testing accuracy {}\n"
+            .format(accuracy_testing/total_iterations) +  # noqa
+        "   " + " ".join("{:>8}".format(n) for n in np.arange(0, config.n_output)) + "\n"  # noqa
         "GC " + " ".join("{:>8}".format(n) for n in gesture_counts) + "\n"
         "--\n"
     )
@@ -354,6 +370,18 @@ def final_test(session, test_generator, config, network, save=False,
         "TPR" + " ".join("{:>8.5f}".format(n) for n in tpr) + "\n"
         "FPR" + " ".join("{:>8.5f}".format(n) for n in fpr) + "\n"
     )
+    report_string += "---------- Confusion matrix ----------\n"
+    for i in range(config.n_output):
+        report_string += np.array2string(
+            confusion_matrix[i], precision=4, suppress_small=True)
+        report_string += '\n'
+    report_string += "---------- Normalised confusion matrix ----------\n"
+    for i in range(config.n_output):
+        report_string += np.array2string(
+            (confusion_matrix[i]/sum(confusion_matrix[i])),
+            precision=4, suppress_small=True, floatmode='fixed')
+        report_string += '\n'
+
     if save:
         with open(config.export_dir + "/test.txt", 'w+') as f:
             f.write(report_string)
@@ -433,7 +461,8 @@ class NetworkModel():
         # Model evaluation
         if config.label_type == 'bincount':
             _log("Bincount norm prediction accuracy measurement")
-            correct_pred = tf.norm(self.pred, self.y, 1)
+            probabilities = tf.nn.softmax(self.pred)
+            correct_pred = 1 - tf.norm(probabilities - self.y, axis=1)
         else:
             correct_pred = tf.equal(
                 tf.argmax(self.pred, 1), tf.argmax(self.y, 1))
@@ -518,26 +547,22 @@ def doTrainingSession(training_data, testing_data, config):
         plot_graphs(accuracy_graph_train, accuracy_graph_test, loss_graph,
                     config, save=True)
 
-        # # -------------------- SAVE MODEL -----------------------------------
-        # signature = tf.saved_model.predict_signature_def(
-        #     inputs={'myInput': x},
-        #     outputs={'myOutput': pred})
-        # builder.add_meta_graph_and_variables(
-        #     sess=session,
-        #     tags=["myTag"],
-        #     signature_def_map={'predict': signature})
-        # builder.save()
+        # -------------------- SAVE MODEL -----------------------------------
+        if config.save_model:
+            signature = tf.saved_model.predict_signature_def(
+                inputs={'myInput': network.x},
+                outputs={'myOutput': network.pred})
+            config.builder.add_meta_graph_and_variables(
+                sess=session,
+                tags=["myTag"],
+                signature_def_map={'predict': signature})
+            config.builder.save()
 
 
 # frame_step_opts = [3, 5, 8, 10]
 # learning_rate_opts = [0.01, 0.001, 0.0005, 0.0001, 0.00001, 0.000001]
 # n_frames_opts = [6]
 # delay_opts = [3]
-
-# ------------------------ SAVE MODEL -----------------------------------------
-
-# export_dir = "hyperparameters3/"
-# export_dir = "model_I-5000_L-0.001_Random"
 
 
 if __name__ == '__main__':
@@ -546,10 +571,10 @@ if __name__ == '__main__':
 
     # Load training data
     start_time = time.time()
-    np.random.seed(7)
+    # np.random.seed(7)
     training_data, testing_data = loadData(
         0.2,
-        (6, 101), data_folder)
+        (6, 102), data_folder)
     _log("Loaded training data in {} seconds".format(time.time() - start_time))
 
     # calculateMapping(training_data[0], data_folder)
@@ -568,6 +593,14 @@ if __name__ == '__main__':
 
     # If doing hyperparameters, DON'T save the model and change the
     # export_dir = "hyperparameters/" + config.get_hyperstring()
-    config = Config()
+    config = Config(
+        learning_rate=0.0005,
+        training_iters=2000,
+        final_testing_iters=20,
+        batch_size=10,
+        delay=20,
+        save_model=True
+    )
     config.mapping = loadMapping(config, data_folder)
     doTrainingSession(training_data, testing_data, config)
+    print("Finished")

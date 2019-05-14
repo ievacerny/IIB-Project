@@ -7,7 +7,7 @@ import tensorflow as tf
 HOST = '127.0.0.1'
 PORT = 65432  # (non-privileged ports are > 1023)
 model_path = r"model_I-5000_L-0.001_Random"
-data_path = r"..\\Database\\MyDatabase\\"
+data_path = r"..\\Database\\MyDatabase5\\"
 n_frames = 6
 n_dimension = 40
 threshold = 0.8
@@ -63,16 +63,22 @@ with tf.Session() as session:
                 features = np.reshape(
                     input_data, [-1, n_frames, n_dimension])
                 raw_output = session.run(pred, feed_dict={x: features})
+                sum = np.sum(np.exp(raw_output))
 
-                prediction_prob = tf.nn.softmax(raw_output).eval()
-                prediction = np.argmax(prediction_prob)
+                # prediction_prob = tf.nn.softmax(raw_output).eval()
+                # prediction = np.argmax(prediction_prob)
+
+                prediction = np.argmax(raw_output)
+                prediction_prob = np.exp(raw_output[0]) / sum
                 prev_prediction = prediction
-                if prediction_prob[0][prediction] < threshold:
+                # if prediction_prob[0][prediction] < threshold:
+                if prediction_prob[prediction] < threshold:
                     prev_prediction = 0
                     prediction = 0
                 elif prev_prediction != prediction:
                     prediction = 0
-                barplot(prediction_prob[0], prediction)
+                barplot(prediction_prob, prediction)
+                # prediction = 0
                 prediction = str.encode(str(prediction))
                 connection.sendall(prediction)
                 # print("Sent prediction", prediction)
