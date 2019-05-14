@@ -43,8 +43,10 @@ Database/*
 Papers/
 LSTM_training/hyper*
 LSTM_training/model*
+LSTM_training/*/model_*
 
 # Latex and powerpoint temp files
+Gesture_elicitation/*~$*
 Reports/*/*~$*
 Reports/*/*.aux
 Reports/*/*.log
