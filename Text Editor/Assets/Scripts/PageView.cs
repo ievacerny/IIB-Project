@@ -15,11 +15,10 @@ public class PageView : MonoBehaviour {
     [SerializeField] private Transform text_cursor;
     [SerializeField] private TextMesh rendered_text;
     [SerializeField] public Renderer frame;
-    [SerializeField] private float feedback_duration = 1f;
     #endregion
     #region Public Attributes
-    public bool selection_mode = false;
-    public bool trigger_active = false;
+    [HideInInspector] public bool selection_mode = false;
+    [HideInInspector] public bool trigger_active = false;
     public int gesture_code = 0;
     #endregion
     #region Private Parameters
@@ -31,16 +30,16 @@ public class PageView : MonoBehaviour {
     private readonly float selection_time_delay = 0.3f;
     private readonly float default_collider_scale = 0.02f;
     private readonly string[] gesture_map = new string[] { "", "Undo", "Redo", "Copy", "Paste", "Delete" };
-    public float extended_collider_scale = 0.1f;
+    private readonly float extended_collider_scale = 0.1f;
+    private readonly float feedback_duration = 0.5f;
     #endregion
     #region Private Attributes
     private List<GameObject> selection_drawing;
     private Indices selection_start;
     private float selection_timer = 0f;
     private float feedback_timer = 0f;
-    private bool past_selection_mode = false;
     private Transform trigger_finger;
-    private UnityEngine.UI.Text text;
+    private UnityEngine.UI.Text feedback_text;
     #endregion
 
     #region Unity Control
@@ -59,7 +58,7 @@ public class PageView : MonoBehaviour {
         Assert.IsNotNull(text_cursor, "No text cursor associated with the page");
 
         if (feedback != null)
-            text = feedback.GetComponentInChildren<UnityEngine.UI.Text>();
+            feedback_text = feedback.GetComponentInChildren<UnityEngine.UI.Text>();
         else
             Debug.LogError("Feedback system reference is not provided.");
 
@@ -73,14 +72,19 @@ public class PageView : MonoBehaviour {
 
     private void OnDisable()
     {
-        if (feedback != null)
-            feedback.SetActive(false);
         presenter.Reset();
         ShowTextCursor(false);
+
+        if (feedback != null)
+            feedback.SetActive(false);
+        feedback_text.text = "";
+        feedback_timer = 0f;
+ 
+        gesture_code = 0;
+        trigger_active = false;
         selection_start = null;
         selection_timer = 0f;
-        trigger_active = false;
-        text.text = "";
+
         if (selection_mode)
         {
             RemoveSelection();
@@ -90,6 +94,9 @@ public class PageView : MonoBehaviour {
 
     private void OnTriggerEnter(Collider other)
     {
+        // Disabling the script does not disable these functions
+        if (!enabled)
+            return;
         if (other.gameObject.name == "IndexTip")
         {
             trigger_active = true;
@@ -103,11 +110,16 @@ public class PageView : MonoBehaviour {
 
     private void OnTriggerStay(Collider other)
     {
+        // Disabling the script does not disable these functions
+        if (!enabled)
+            return;
+        // Selection is happening, draw the selection
         if (other.gameObject.name == "IndexTip" && trigger_active && selection_mode)
         {
             Vector3 finger_coords = transform.InverseTransformPoint(other.transform.position);
             presenter.ClickDrag(selection_start, CoordsToInd(finger_coords), true);
         }
+        // SelectionModeState was changed by HandControl. Reset the rest of the things to default
         else if (other.gameObject.name == "IndexTip" && !trigger_active && !selection_mode)
         {
             SetFrameTransparency(0.5f);
@@ -118,6 +130,9 @@ public class PageView : MonoBehaviour {
 
     private void OnTriggerExit(Collider other)
     {
+        // Disabling the script does not disable these functions
+        if (!enabled)
+            return;
         if (other.gameObject.name == "IndexTip")
         {
             if (selection_mode)
@@ -132,25 +147,22 @@ public class PageView : MonoBehaviour {
     void Update()
     {
         #region Feedback and gesture control
-        if (gesture_code == 0)
+        if (feedback.activeSelf)
         {
-            if (feedback_timer == 0f)
-                return;
-            if (Time.time - feedback_timer > feedback_duration)
+            if(Time.time - feedback_timer > feedback_duration)
             {
                 feedback.SetActive(false);
-                text.text = "";
+                feedback_text.text = "";
                 feedback_timer = 0f;
             }
         }
         else
         {
-            if (!feedback.activeSelf)
-                feedback.SetActive(true);
-            if (text.text != gesture_map[gesture_code])
+            if (gesture_code != 0)
             {
-                text.text = gesture_map[gesture_code];
-                Debug.Log(string.Format("Do action {0}", gesture_code));
+                feedback.SetActive(true);
+                feedback_text.text = gesture_map[gesture_code];
+                feedback_timer = Time.time;
                 switch (gesture_code)
                 {
                     case 1:
@@ -170,7 +182,6 @@ public class PageView : MonoBehaviour {
                         break;
                 }
             }
-            feedback_timer = Time.time;
         }
         #endregion
 
@@ -358,7 +369,7 @@ public class PageView : MonoBehaviour {
 
     public void ChangeSelectionModeStatus(bool status, bool error=false)
     {
-        // IMPORTANT: has to be changes before trigger_active
+        // IMPORTANT: has to be changed before trigger_active
         selection_mode = status;
         Vector3 size = transform.GetComponent<BoxCollider>().size;
         if (status)
@@ -445,6 +456,11 @@ public class PageView : MonoBehaviour {
     {
         // Needed for testing purposes
         presenter = new_presenter;
+    }
+
+    public string GetFeedbackText()
+    {
+        return feedback_text.text;
     }
 
     #endregion

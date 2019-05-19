@@ -7,11 +7,10 @@ using UnityEngine;
 
 public class HandControl : MonoBehaviour
 {
-    public enum GRstate { NOTHING, ML, SELECTION_ACTIVATE, SELECTION_DEACTIVATE };
+    public enum GRstate { NOTHING, NN, SELECTION_ACTIVATE, SELECTION_DEACTIVATE };
 
     #region Parameters
     [SerializeField] private bool record_data = false;
-    private readonly int frame_step = 8;
     private string file_path = "../Database/MyDatabase/data_";
     #endregion
     #region Private Attributes
@@ -62,10 +61,14 @@ public class HandControl : MonoBehaviour
         if (current_page == null)
         {
             current_state = GRstate.NOTHING;
+            SendGestureData();
+            int code = ReadGestureCode();
+            // Return because later code assumes a page reference
+            return;
         }
         else
         {
-            // Determine the state of the recognition network (and possibly record data)
+            // Find right hand
             hand = FindRightHand(provider.CurrentFrame);
             if (hand == null)
             {
@@ -77,15 +80,17 @@ public class HandControl : MonoBehaviour
             }
             else
             {
+                // Determine the state of the gesture recognition framework
                 if (current_page_script.trigger_active && !current_page_script.selection_mode)
                     current_state = GRstate.SELECTION_ACTIVATE;
                 else if (current_page_script.trigger_active && current_page_script.selection_mode)
                     current_state = GRstate.SELECTION_DEACTIVATE;
                 else if (!current_page_script.trigger_active && !current_page_script.selection_mode)
-                    current_state = GRstate.ML;
+                    current_state = GRstate.NN;
                 else
                     Debug.LogWarning("Unexpected gesture recognition activation state");
 
+                // Record data, if this is the operation chosen (don't do predictions -> return)
                 if (record_data)
                 {
                     RecordFrame();
@@ -94,36 +99,29 @@ public class HandControl : MonoBehaviour
             }
         }
 
-        // Take care of selection and deselection
+        // Do the corresponding action for the state
+        // Need to read after sending, otherwise the messages will group together
+        SendGestureData();
+        int gesture_code = ReadGestureCode();
         switch (current_state)
         {
             case GRstate.SELECTION_ACTIVATE:
                 CheckSelectionActivationGesture();
+                current_page_script.gesture_code = 0;
                 break;
 
             case GRstate.SELECTION_DEACTIVATE:
                 CheckSelectionDeactivationGesture();
+                current_page_script.gesture_code = 0;
+                break;
+
+            case GRstate.NN:
+                current_page_script.gesture_code = gesture_code;
                 break;
 
             default:
+                current_page_script.gesture_code = 0;
                 break;
-        }
-
-        // Every n-th frame actually communicate with the server and update the gesture code
-        if (Time.frameCount % frame_step == 0)
-        {
-            SendGestureData();
-            int gesture_code = ReadGestureCode();
-            if (current_state != GRstate.ML)
-                current_page_script.gesture_code = 0;
-            else
-                current_page_script.gesture_code = gesture_code;
-        }
-        // In between server communications, keep the same ML gesture code or set to 0 if the state has changed
-        else
-        {
-            if (current_state != GRstate.ML && current_page_script.gesture_code != 0)
-                current_page_script.gesture_code = 0;
         }
     }
 
@@ -163,10 +161,10 @@ public class HandControl : MonoBehaviour
 
         try
         {
-            if (current_state == GRstate.ML)
-                client.SendMessage(EncodeFrameData());
-            else
+            if (current_state == GRstate.NOTHING)
                 client.SendMessage("0");
+            else
+                client.SendMessage(EncodeFrameData());
         }
         catch (Exception e)
         {
@@ -186,7 +184,6 @@ public class HandControl : MonoBehaviour
         {
             float start = Time.realtimeSinceStartup;
             message = client.ReadMessage();
-            Debug.Log(Time.realtimeSinceStartup - start);
         }
         catch (Exception e)
         {
@@ -209,6 +206,7 @@ public class HandControl : MonoBehaviour
     private void CheckSelectionActivationGesture()
     {
         List<Finger> fingers = hand.Fingers;
+        // Look for extended first three fingers
         bool condition = (
             fingers[0].IsExtended && fingers[1].IsExtended && fingers[2].IsExtended &&
             !fingers[3].IsExtended && !fingers[4].IsExtended
@@ -223,26 +221,30 @@ public class HandControl : MonoBehaviour
     private void CheckSelectionDeactivationGesture()
     {
         List<Finger> fingers = hand.Fingers;
+        // Look for two extended fingers and the bent thumb
         bool thumb_condition = (
             !fingers[0].IsExtended && fingers[1].IsExtended && fingers[2].IsExtended &&
             !fingers[3].IsExtended && !fingers[4].IsExtended
         );
+        // Check if the hand position is still valid (maybe other fingers are bent or extended)
         bool activation_condition = (
             fingers[0].IsExtended && fingers[1].IsExtended && fingers[2].IsExtended &&
             !fingers[3].IsExtended && !fingers[4].IsExtended
         );
+        //
         if (thumb_condition)
         {
             current_page_script.ChangeSelectionModeStatus(false);
             current_page_script.trigger_active = false;
-            current_state = GRstate.ML;
+            current_state = GRstate.NN;
         }
+        // If hand position is changed (and not the confirmation), report as selection error
         else if (!activation_condition)
         {
             current_page_script.ChangeSelectionModeStatus(false, error: true);
             current_page_script.trigger_active = false;
             current_page_script.RemoveSelection();
-            current_state = GRstate.ML;
+            current_state = GRstate.NN;
         }
     }
 
