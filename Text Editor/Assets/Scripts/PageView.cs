@@ -31,7 +31,7 @@ public class PageView : MonoBehaviour {
     private readonly float default_collider_scale = 0.02f;
     private readonly string[] gesture_map = new string[] { "", "Undo", "Redo", "Copy", "Paste", "Delete" };
     private readonly float extended_collider_scale = 0.1f;
-    private readonly float feedback_duration = 0.5f;
+    private readonly float feedback_duration = 0.6f;
     #endregion
     #region Private Attributes
     private List<GameObject> selection_drawing;
@@ -203,21 +203,21 @@ public class PageView : MonoBehaviour {
                 {
                     presenter.ClickDrag(selection_start, CoordsToInd(mouse_coords), true);
                 }
-
-                if (Input.GetMouseButtonUp(0) && selection_start != null)
+            }
+            // Confirm selection regardless if the mouse is on the page
+            if (Input.GetMouseButtonUp(0) && selection_start != null)
+            {
+                if (Time.time - selection_timer > selection_time_delay)
                 {
-                    if (Time.time - selection_timer > selection_time_delay)
-                    {
-                        presenter.ClickDrag(selection_start, CoordsToInd(mouse_coords), false);
-                    }
-                    else
-                    {
-                        presenter.Click(CoordsToInd(mouse_coords));
-                        ShowTextCursor(true);
-                    }
-                    selection_start = null;
-                    selection_timer = 0f;
+                    presenter.ClickDrag(selection_start, CoordsToInd(mouse_coords), false);
                 }
+                else
+                {
+                    presenter.Click(CoordsToInd(mouse_coords));
+                    ShowTextCursor(true);
+                }
+                selection_start = null;
+                selection_timer = 0f;
             }
         }
 
@@ -236,21 +236,33 @@ public class PageView : MonoBehaviour {
         {
             if (Input.GetKeyDown(KeyCode.C))
             {
+                feedback.SetActive(true);
+                feedback_text.text = "Copy";
+                feedback_timer = Time.time;
                 presenter.Copy();
                 return;  // Return so that the letter is not entered as part of input string
             }
             else if (Input.GetKeyDown(KeyCode.V))
             {
+                feedback.SetActive(true);
+                feedback_text.text = "Paste";
+                feedback_timer = Time.time;
                 presenter.Paste();
                 return;
             }
             else if (Input.GetKeyDown(KeyCode.Z))
             {
+                feedback.SetActive(true);
+                feedback_text.text = "Undo";
+                feedback_timer = Time.time;
                 presenter.Undo();
                 return;
             }
             else if (Input.GetKeyDown(KeyCode.Y))
             {
+                feedback.SetActive(true);
+                feedback_text.text = "Redo";
+                feedback_timer = Time.time;
                 presenter.Redo();
                 return;
             }

@@ -78,6 +78,7 @@
     white space at the beginning*
 
 ### 10 Select empty area without text
+  - Copy some text form another application
   - Move cursor below to the empty area below the text
   - Click and hold left mouse button
   - Move mouse to a different point of the empty area below the text
@@ -86,7 +87,7 @@
   - Press Shift+C on the keyboard
   - Click left mouse button at the end of the text
   - Press Enter and then Shift+V on the keyboard
-  - *Nothing should happen*
+  - *Text copied from another application should appear*
 
 ## Copy and Paste actions
 
@@ -208,3 +209,117 @@
   - Press backspace on the keyboard
   - *The cursor should move back one character and the character that was
     before the cursor should disappear*
+
+## Gesture controls
+
+### 25-47 Repeat tests 1-22 using gesture controls
+  - Moving mouse cursor and clicking left mouse button -> touching the plane
+    with index finger
+  - Click, hold and drag, release -> touch the plane with the hand in a gun
+    formation, move the hand parallel to the plane while holding the same
+    formation, tap the thumb or move the hand away from the plane
+  - Shift+C -> form the hand into mirrored C shape
+  - Shift+V -> form V with index and middle fingers (other fingers bent)
+  - Shift+Z -> with only the index finger extended, do a full anticlockwise
+    circle by rotating the wrist
+  - Shift+Y -> with only the index finger extended, do a full clockwise circle
+    by rotating the wrist
+
+### 48 Gesture selection confirmation
+  - Start selecting text (touch in formation and drag)
+  - Tap the thumb with the index finger still touching the plane
+  - *The selection should be confirmed and the frame should be semitransparent*
+
+## Gesture recognition framework
+
+### 49 Gesture while touching the plane
+  - Copy some text (from anywhere)
+  - Touch the plane with index finger
+  - Do the paste gesture while touching the plane
+  - *Nothing should happen*
+
+## Changing focus
+
+### 50 Remove focus from a plane
+  - The gaze hits a plane
+  - Rotate the camera to remove gaze from the plane
+  - *The frame of the plane should disappear*
+  - Do any editing action
+  - *Nothing should happen*
+  - Attempt to touch the plane
+  - *The hand should simply pass through without any unresponsiveness from the
+    plane*
+
+### 51 Bring focus to the plane
+  - The gaze is not focused on any plane
+  - Rotate the camera to bring focus to the plane
+  - *A semi transparent frame should appear*
+  - Do any editing action
+  - *The action should be executed*
+  - Try to touch the plane
+  - *The frame should become opaque and the cursor should be placed where the
+    finger hits the plane*
+
+### 52 Switching focus
+  - The gaze is on one plane
+  - Select some text
+  - Do a copy action
+  - Rotate the camera to bring focus to another plane
+  - *A semi transparent frame of first plane should disappear and appear around
+    the second plane should*
+  - Do a paste action
+  - *The text should be inserted at the end of the second plane text*
+  - Try to touch the first plane
+  - *It should be unresponsive*
+  - Touch the second plane
+  - *The cursor should move to where the index finger touched the plane*
+
+### 53 Multiple switches
+  - The gaze is on one plane
+  - Bring it to another plane
+  - *A semi transparent frame of first plane should disappear and appear around
+    the second plane should*
+  - Bring the gaze away
+  - *The frame of the second plane should disappear*
+  - Bring the gaze back to the first plane
+  - *A semi transparent frame should appear on the first plane*
+  - Bring the gaze to the second plane
+  - *A semi transparent frame of first plane should disappear and appear around
+    the second plane should*
+  - Try to touch the first plane
+  - *It should be unresponsive*
+  - Touch the second plane
+  - *The cursor should move to where the index finger touched the plane*
+
+## Feedback
+
+### 54 Single gesture action
+  - Wait until no feedback shown
+  - Do any gesture action
+  - *A popup with the name of the action should appear for 0.6s*
+
+### 55 Two successive quick gesture action
+  - Wait until no feedback shown
+  - Place the cursor at the end of the text
+  - Do delete gesture twice very quickly (in less than 0.5s)
+  - *Only one character should be deleted*
+
+### 56 Two successive quick keyboard actions
+  - Wait until no feedback shown
+  - Place the cursor at the end of the text
+  - Press backspace twice very quickly (in less than 0.5s)
+  - *Two characters should be deleted*
+
+### 57 Two successive slow gesture action
+  - Wait until no feedback shown
+  - Place the cursor at the end of the text
+  - Do a delete gesture
+  - Wait 1s
+  - Do a delete gesture again
+  - *Two characters should be deleted*
+
+### 58 Different gesture actions
+  - Wait until no feedback shown
+  - Do a copy gesture
+  - Very quickly do a delete gesture (in less than 0.5s after copy)
+  - *No characters should be deleted*

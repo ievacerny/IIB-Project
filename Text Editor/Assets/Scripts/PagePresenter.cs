@@ -43,6 +43,12 @@ public class PagePresenter
 
     public void ClickDrag(Indices start, Indices end, bool moving = false)
     {
+        // Negative values not allowed in selection
+        start.row = Mathf.Max(start.row, 0);
+        start.col = Mathf.Max(start.col, 0);
+        end.row = Mathf.Max(end.row, 0);
+        end.col = Mathf.Max(end.col, 0);
+
         if (!moving)
             SelectText(IndToIdx(start), IndToIdx(end));
 
