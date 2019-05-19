@@ -32,7 +32,7 @@ class Config():
         # Dimensionality parameters
         n_frames=40,
         n_dimension=45,
-        n_output=15,
+        n_output=6,
         n_hidden=512,  # Dimension of the hidden state
         delay=13,
         mapping=None,
@@ -73,12 +73,12 @@ class Config():
 
     def get_hyperstring(self):
         """Build and return a hyperparameter string."""
-        return "LR-{0}_H-{1}_F-{2}_D-{3}_S-{4}_I-{5}".format(
+        return "LR-{0}_H-{1}_F-{2}_B-{3}_D-{4}_I-{5}".format(
             self.learning_rate,
             self.n_hidden,
             self.n_frames,
-            self.n_dimension,
-            self.frame_step,
+            self.batch_size,
+            self.delay,
             self.training_iters)
 
 
@@ -299,7 +299,6 @@ def final_test(session, test_generator, config, network, save=False,
         actual_label = np.argmax(onehot_label, axis=1)[0]
         if (actual_label != 0 and
                 gesture_counts[actual_label] >= config.final_testing_iters):
-            print(gesture_counts)
             if sum(gesture_counts[1:]) == (
                     config.final_testing_iters*(config.n_output-1)):
                 break
@@ -567,40 +566,33 @@ def doTrainingSession(training_data, testing_data, config):
 
 if __name__ == '__main__':
 
-    data_folder = pjoin("..", "Database", "MyDatabase14")
+    data_folder = pjoin("..", "Database", "MyDatabase")
 
     # Load training data
     start_time = time.time()
-    # np.random.seed(7)
-    training_data, testing_data = loadData(
-        0.2,
-        (6, 102), data_folder)
+    np.random.seed(7)
+    training_data, testing_data = loadData(0.2, number_of_vids=(22, 111),
+                                           data_folder=data_folder)
     _log("Loaded training data in {} seconds".format(time.time() - start_time))
 
     # calculateMapping(training_data[0], data_folder)
 
     # ------------------------ HYPERPARAMETERS --------------------------------
-    # for learning_rate in learning_rate_opts:
-    #     for n_frames in n_frames_opts:
-    #         for n_dimension in n_dimension_opts:
-    # for learning_rate, n_frames, n_dimension in option_sets:
-    # for learning_rate in learning_rates:
-
-    # for n_frames in n_frames_opts:
-    #     for learning_rate in learning_rate_opts:
-    #     # for frame_step in frame_step_opts:
-    #         for delay in delay_opts:
-
     # If doing hyperparameters, DON'T save the model and change the
     # export_dir = "hyperparameters/" + config.get_hyperstring()
+
     config = Config(
-        learning_rate=0.0005,
-        training_iters=2000,
-        final_testing_iters=20,
-        batch_size=10,
-        delay=20,
-        save_model=True
+        batch_size=20,
+        n_hidden=256,
+        learning_rate=0.005,
+        n_frames=30,
+        delay=5,
+        training_iters=5000,
+        final_testing_iters=50,
+        save_model=True,
+        export_dir="final_model"
     )
     config.mapping = loadMapping(config, data_folder)
+    print(config.export_dir)
     doTrainingSession(training_data, testing_data, config)
     print("Finished")

@@ -9,11 +9,11 @@ import tensorflow as tf
 print(tf.VERSION)
 
 # ---------------------------- PARAMETERS -------------------------------------
-model_path = r"model_I-5000_L-0.001_Random"
+model_path = r"final_model"
 data_path = r"..\\Database\\MyDatabase\\"
-n_frames = 6
-n_dimension = 40
-frame_step = 8
+n_frames = 30
+n_dimension = 45
+frame_step = 1
 
 # ---------------------------- READ ARGUMENTS ---------------------------------
 if len(sys.argv) == 2:
