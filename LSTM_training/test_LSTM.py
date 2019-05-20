@@ -277,7 +277,7 @@ class TestGetData(unittest.TestCase):
         self.n_output = 103
         self.config = LSTM_train.Config(
             n_frames=3, frame_step=2, n_output=self.n_output,
-            mapping=self._build_mapping((249, 2)))
+            mapping=self._build_mapping((249, 2)), delay=2)
 
     def test_get_data_check_mapping(self):
         """Test that mapping frames to features works correctly."""
