@@ -1,0 +1,14 @@
+	frame_step=1,
+        batch_size=20,
+        learning_rate=0.005,
+        training_iters=5000,
+        display_step=50,
+        testing_iters=50,
+        final_testing_iters=50,  # Number of iterations per gesture
+        # Dimensionality parameters
+        n_frames=30,
+        n_dimension=45,
+        n_output=6,
+        n_hidden=256,
+        delay=5,
+        label_type='delay',
