@@ -1,9 +1,0 @@
-System tested with Oculus 14/12/18
-
-The quality of text is quite bad. A switch to TextMeshPro might help, but it might not be worth the effort.
-
-There was some ghost lagging when moving the head. Most likely Oculus fault.
-
-The interaction of touching the plane seemed easy to use, but arms did get tired after a while. Although when actually working with text the user is probably not going to be moving cursor constantly without lowering his hands.
-
-The text in the view was very big, most of the camera view, but that is how it was set up. Might have to change it if using Hololens in the future.
